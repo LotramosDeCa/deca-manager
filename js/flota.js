@@ -197,9 +197,15 @@ const Flota = {
             <p style="font-size:14px; font-weight:500;">${item.num_ejes || '—'}</p>
           </div>
           <div>
+            <span style="font-size:12px; color:var(--gray-500);">Tara (kg)</span>
+            <p style="font-size:14px; font-weight:500;">${item.tara ? Number(item.tara).toLocaleString('es-ES') : '—'}</p>
+          </div>
+          ${isVehiculo ? `
+          <div>
             <span style="font-size:12px; color:var(--gray-500);">MMA (kg)</span>
             <p style="font-size:14px; font-weight:500;">${item.mma ? Number(item.mma).toLocaleString('es-ES') : '—'}</p>
           </div>
+          ` : ''}
           <div style="grid-column: 1/-1;">
             <span style="font-size:12px; color:var(--gray-500);">Registrado</span>
             <p style="font-size:14px; font-weight:500;">${new Date(item.created_at).toLocaleDateString('es-ES')}</p>
@@ -263,10 +269,19 @@ const Flota = {
             <input type="number" id="flota-ejes" min="1" max="10" value="${item?.num_ejes || ''}">
           </div>
           <div class="form-group">
+            <label for="flota-tara">Tara (kg)</label>
+            <input type="number" id="flota-tara" min="0" step="0.01" value="${item?.tara || ''}" placeholder="7500">
+          </div>
+        </div>
+        ${isVehiculo ? `
+        <div class="form-row">
+          <div class="form-group">
             <label for="flota-mma">MMA (kg)</label>
             <input type="number" id="flota-mma" min="0" step="0.01" value="${item?.mma || ''}" placeholder="40000">
           </div>
+          <div class="form-group"></div>
         </div>
+        ` : ''}
         <div id="flota-form-error" class="error-msg" hidden></div>
       </form>
     `;
@@ -307,8 +322,13 @@ const Flota = {
       marca: document.getElementById('flota-marca').value.trim() || null,
       modelo: document.getElementById('flota-modelo').value.trim() || null,
       num_ejes: document.getElementById('flota-ejes').value ? parseInt(document.getElementById('flota-ejes').value) : null,
-      mma: document.getElementById('flota-mma').value ? parseFloat(document.getElementById('flota-mma').value) : null,
+      tara: document.getElementById('flota-tara').value ? parseFloat(document.getElementById('flota-tara').value) : null,
     };
+
+    // Vehículos tienen también MMA
+    if (isVehiculo) {
+      record.mma = document.getElementById('flota-mma').value ? parseFloat(document.getElementById('flota-mma').value) : null;
+    }
 
     btn.disabled = true;
     btn.querySelector('.btn-text').textContent = 'Creando...';
@@ -356,8 +376,13 @@ const Flota = {
       marca: document.getElementById('flota-marca').value.trim() || null,
       modelo: document.getElementById('flota-modelo').value.trim() || null,
       num_ejes: document.getElementById('flota-ejes').value ? parseInt(document.getElementById('flota-ejes').value) : null,
-      mma: document.getElementById('flota-mma').value ? parseFloat(document.getElementById('flota-mma').value) : null,
+      tara: document.getElementById('flota-tara').value ? parseFloat(document.getElementById('flota-tara').value) : null,
     };
+
+    // Vehículos tienen también MMA
+    if (isVehiculo) {
+      updates.mma = document.getElementById('flota-mma').value ? parseFloat(document.getElementById('flota-mma').value) : null;
+    }
 
     btn.disabled = true;
     btn.querySelector('.btn-text').textContent = 'Guardando...';
@@ -416,14 +441,9 @@ const Flota = {
   // ====== HELPERS: LABELS E ICONOS ======
   getTipoLabel(tipo) {
     const labels = {
-      camion: 'Camión',
+      tractora: 'Cabeza tractora',
+      remolque: 'Remolque',
       plataforma: 'Plataforma',
-      lona: 'Lona',
-      frigorifico: 'Frigorífico',
-      cisterna: 'Cisterna',
-      portacontenedores: 'Portacontenedores',
-      basculante: 'Basculante',
-      otro: 'Otro',
     };
     return labels[tipo] || tipo;
   },
