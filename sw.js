@@ -32,8 +32,9 @@ self.addEventListener('activate', (e) => {
 
 // Fetch — Network first, cache fallback
 self.addEventListener('fetch', (e) => {
-  // No cachear peticiones a Supabase
+  // No cachear peticiones a Supabase ni extensiones del navegador
   if (e.request.url.includes('supabase')) return;
+  if (!e.request.url.startsWith('http')) return;
 
   e.respondWith(
     fetch(e.request)
