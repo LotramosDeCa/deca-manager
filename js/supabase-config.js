@@ -21,7 +21,7 @@ async function initSupabase() {
   // Si no está cargado aún, cargarlo dinámicamente
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/supabase/2.39.3/umd/supabase.min.js';
+    script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js';
     script.onload = () => {
       supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       resolve(supabase);
