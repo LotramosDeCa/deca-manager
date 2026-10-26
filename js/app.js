@@ -104,8 +104,8 @@ const App = {
         this.renderDashboard(content);
         break;
       case 'decas':
-        title.textContent = 'Mis DeCA';
-        this.renderDecasPlaceholder(content);
+        title.textContent = Auth.isAdmin() ? 'DeCA' : 'Mis DeCA';
+        Decas.render(content);
         break;
       case 'vehiculos':
         title.textContent = 'Flota';
