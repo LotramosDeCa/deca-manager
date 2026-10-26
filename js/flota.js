@@ -224,13 +224,11 @@ const Flota = {
     const title = isEdit ? `Editar ${entityName}` : `Nuevo ${entityName}`;
 
     const tiposVehiculo = [
-      { value: 'rigido', label: 'Rígido' },
-      { value: 'tractora', label: 'Tractora' },
-      { value: 'furgoneta', label: 'Furgoneta' },
+      { value: 'tractora', label: 'Cabeza tractora' },
     ];
     const tiposRemolque = [
-      { value: 'semirremolque', label: 'Semirremolque' },
       { value: 'remolque', label: 'Remolque' },
+      { value: 'plataforma', label: 'Plataforma' },
     ];
     const tipos = isVehiculo ? tiposVehiculo : tiposRemolque;
 
@@ -418,11 +416,14 @@ const Flota = {
   // ====== HELPERS: LABELS E ICONOS ======
   getTipoLabel(tipo) {
     const labels = {
-      rigido: 'Rígido',
-      tractora: 'Tractora',
-      furgoneta: 'Furgoneta',
-      semirremolque: 'Semirremolque',
-      remolque: 'Remolque',
+      camion: 'Camión',
+      plataforma: 'Plataforma',
+      lona: 'Lona',
+      frigorifico: 'Frigorífico',
+      cisterna: 'Cisterna',
+      portacontenedores: 'Portacontenedores',
+      basculante: 'Basculante',
+      otro: 'Otro',
     };
     return labels[tipo] || tipo;
   },
