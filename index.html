@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1a56db">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>DeCA Manager</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <!-- ====== PANTALLA DE LOGIN ====== -->
+  <div id="login-screen" class="screen active">
+    <div class="login-container">
+      <div class="login-logo">
+        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+          <rect width="56" height="56" rx="14" fill="#1a56db"/>
+          <path d="M16 18h24v4H16zM16 26h24v4H16zM16 34h16v4H16zM38 30l6 8h-12z" fill="white"/>
+        </svg>
+        <h1>DeCA Manager</h1>
+        <p class="login-subtitle">Gestión digital de documentos DeCA</p>
+      </div>
+      <form id="login-form" autocomplete="on">
+        <div class="form-group">
+          <label for="login-email">Correo electrónico</label>
+          <input type="email" id="login-email" name="email" required autocomplete="email" placeholder="tu@email.com">
+        </div>
+        <div class="form-group">
+          <label for="login-password">Contraseña</label>
+          <div class="password-wrapper">
+            <input type="password" id="login-password" name="password" required autocomplete="current-password" placeholder="••••••••">
+            <button type="button" class="toggle-password" aria-label="Mostrar contraseña">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div id="login-error" class="error-msg" hidden></div>
+        <button type="submit" class="btn btn-primary btn-block" id="login-btn">
+          <span class="btn-text">Iniciar sesión</span>
+          <span class="btn-spinner" hidden></span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====== APP PRINCIPAL ====== -->
+  <div id="app-screen" class="screen">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <button id="back-btn" class="icon-btn" hidden aria-label="Volver">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </button>
+        <h2 id="header-title">Dashboard</h2>
+      </div>
+      <div class="header-right">
+        <span id="user-badge" class="badge badge-admin">Admin</span>
+        <button id="menu-btn" class="icon-btn" aria-label="Menú">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Menú desplegable -->
+    <div id="dropdown-menu" class="dropdown-menu" hidden>
+      <div class="dropdown-user-info">
+        <span id="menu-user-name"></span>
+        <span id="menu-user-role" class="badge badge-small"></span>
+      </div>
+      <div class="dropdown-divider"></div>
+      <button class="dropdown-item" data-action="logout">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        Cerrar sesión
+      </button>
+    </div>
+
+    <!-- Contenido dinámico -->
+    <main id="main-content" class="main-content">
+      <!-- Se inyecta desde JS -->
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav id="bottom-nav" class="bottom-nav">
+      <!-- Se genera desde JS según rol -->
+    </nav>
+  </div>
+
+  <!-- ====== MODAL GENÉRICO ====== -->
+  <div id="modal-overlay" class="modal-overlay" hidden>
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-title"></h3>
+        <button class="icon-btn modal-close" aria-label="Cerrar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div id="modal-body" class="modal-body"></div>
+      <div id="modal-footer" class="modal-footer"></div>
+    </div>
+  </div>
+
+  <!-- ====== TOAST ====== -->
+  <div id="toast" class="toast" hidden></div>
+
+  <!-- Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/supabase/2.39.3/umd/supabase.min.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/usuarios.js"></script>
+  <script>
+    // Registrar Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>
