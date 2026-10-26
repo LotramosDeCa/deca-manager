@@ -61,7 +61,7 @@ const Decas = {
 
     // Conductores solo ven las suyas
     if (!Auth.isAdmin()) {
-      query = query.eq('conductor_id', Auth.currentProfile.user_id);
+      query = query.eq('conductor_id', Auth.currentProfile.id);
     }
 
     const { data, error } = await query;
@@ -252,7 +252,7 @@ const Decas = {
     const [vehiculos, remolques, conductores] = await Promise.all([
       supabase.from('vehiculos').select('id, matricula, marca, modelo').eq('activo', true).order('matricula'),
       supabase.from('remolques').select('id, matricula, marca, modelo').eq('activo', true).order('matricula'),
-      supabase.from('profiles').select('user_id, nombre, apellidos, dni').eq('activo', true).eq('rol', 'conductor').order('nombre'),
+      supabase.from('profiles').select('id, user_id, nombre, apellidos, dni').eq('activo', true).eq('rol', 'conductor').order('nombre'),
     ]);
 
     this.vehiculosActivos = vehiculos.data || [];
@@ -260,7 +260,7 @@ const Decas = {
     const conductoresActivos = conductores.data || [];
 
     // Incluir admins también como posibles conductores
-    const admins = await supabase.from('profiles').select('user_id, nombre, apellidos, dni').eq('activo', true).eq('rol', 'admin').order('nombre');
+    const admins = await supabase.from('profiles').select('id, user_id, nombre, apellidos, dni').eq('activo', true).eq('rol', 'admin').order('nombre');
     const todosConductores = [...conductoresActivos, ...(admins.data || [])];
 
     const hoy = new Date().toISOString().split('T')[0];
@@ -314,7 +314,7 @@ const Decas = {
           <label for="deca-conductor">Conductor *</label>
           <select id="deca-conductor" required>
             <option value="">Seleccionar conductor</option>
-            ${todosConductores.map(c => `<option value="${c.user_id}" data-nombre="${c.nombre} ${c.apellidos}" data-dni="${c.dni || ''}">${c.nombre} ${c.apellidos}</option>`).join('')}
+            ${todosConductores.map(c => `<option value="${c.id}" data-nombre="${c.nombre} ${c.apellidos}" data-dni="${c.dni || ''}">${c.nombre} ${c.apellidos}</option>`).join('')}
           </select>
         </div>
 
