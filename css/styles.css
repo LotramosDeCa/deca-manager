@@ -261,6 +261,20 @@ body {
 .badge-small { padding: 2px 8px; font-size: 10px; }
 .badge-activo { background: var(--success-light); color: var(--success); }
 .badge-inactivo { background: var(--gray-200); color: var(--gray-500); }
+.badge-success { background: var(--success-light); color: var(--success); }
+.badge-warning { background: var(--warning-light); color: var(--warning); }
+
+/* ====== DECA CARD ====== */
+.deca-card .list-card-info .detail {
+  font-size: 12px;
+  color: var(--gray-500);
+  line-height: 1.4;
+}
+.deca-card .list-card-info .name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 
 /* ====== DROPDOWN MENU ====== */
 .dropdown-menu {
