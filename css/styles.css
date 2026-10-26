@@ -503,6 +503,62 @@ body {
   justify-content: flex-end;
 }
 
+/* ====== TABS BAR ====== */
+.tabs-bar {
+  display: flex;
+  gap: 4px;
+  background: var(--gray-100);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+}
+.tab-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-500);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tab-btn.active {
+  background: var(--white);
+  color: var(--primary);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* ====== SEARCH INLINE ====== */
+.search-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--gray-100);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  flex: 1;
+  margin-right: 8px;
+}
+.search-inline svg { color: var(--gray-400); flex-shrink: 0; }
+.search-inline input { color: var(--gray-900); width: 100%; }
+.search-inline input::placeholder { color: var(--gray-400); }
+
+/* ====== LIST CARD ICON ====== */
+.list-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ====== BADGE INFO ====== */
+.badge-info { background: #dbeafe; color: #1e40af; }
+
 /* ====== TOAST ====== */
 .toast {
   position: fixed;
