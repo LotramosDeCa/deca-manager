@@ -109,7 +109,7 @@ const App = {
         break;
       case 'vehiculos':
         title.textContent = 'Flota';
-        this.renderVehiculosPlaceholder(content);
+        Flota.render(content);
         break;
       case 'usuarios':
         title.textContent = 'Equipo';
