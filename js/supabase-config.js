@@ -14,7 +14,20 @@ let supabase;
 async function initSupabase() {
   // Cargar Supabase JS SDK desde CDN
   if (typeof window.supabase !== 'undefined') {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: {
+        // Fetch con timeout de 10s: evita que el SDK se quede colgado
+        fetch: (url, options = {}) => {
+          const controller = new AbortController();
+          if (options.signal) {
+            options.signal.addEventListener('abort', () => controller.abort());
+          }
+          const timer = setTimeout(() => controller.abort(), 10000);
+          return fetch(url, { ...options, signal: controller.signal })
+            .finally(() => clearTimeout(timer));
+        }
+      }
+    });
     return supabase;
   }
 
@@ -23,7 +36,19 @@ async function initSupabase() {
     const script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js';
     script.onload = () => {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        global: {
+          fetch: (url, options = {}) => {
+            const controller = new AbortController();
+            if (options.signal) {
+              options.signal.addEventListener('abort', () => controller.abort());
+            }
+            const timer = setTimeout(() => controller.abort(), 10000);
+            return fetch(url, { ...options, signal: controller.signal })
+              .finally(() => clearTimeout(timer));
+          }
+        }
+      });
       resolve(supabase);
     };
     script.onerror = () => reject(new Error('No se pudo cargar Supabase SDK'));
