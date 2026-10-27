@@ -264,6 +264,7 @@ body {
 .badge-small { padding: 2px 8px; font-size: 10px; }
 .badge-activo { background: var(--success-light); color: var(--success); }
 .badge-inactivo { background: var(--gray-200); color: var(--gray-500); }
+.badge-danger { background: #fee2e2; color: #dc2626; }
 .badge-success { background: var(--success-light); color: var(--success); }
 .badge-warning { background: var(--warning-light); color: var(--warning); }
 
