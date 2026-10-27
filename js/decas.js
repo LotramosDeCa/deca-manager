@@ -514,13 +514,8 @@ const Decas = {
       showToast(`DeCA ${referencia} creada`);
       this._pendingRecord = null;
 
-      // Recargar lista en background (no bloqueante)
-      this.loadDecas().catch(() => {});
-
-      // Mostrar detalle de la DeCA recién creada
-      if (data) {
-        this.showDetail(data);
-      }
+      // Recargar lista
+      await this.loadDecas();
 
     } catch (err) {
       // Solo mostrar error si el modal sigue visible
