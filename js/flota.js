@@ -329,7 +329,7 @@ const Flota = {
     btn.querySelector('.btn-spinner').hidden = false;
 
     try {
-      const { error } = await supabase.from(table).insert(record);
+      const { error } = await sbInsert(table, record);
 
       if (error) {
         if (error.code === '23505') {
@@ -383,7 +383,7 @@ const Flota = {
     btn.querySelector('.btn-spinner').hidden = false;
 
     try {
-      const { error } = await supabase.from(table).update(updates).eq('id', itemId);
+      const { error } = await sbUpdate(table, 'id=eq.' + itemId, updates);
 
       if (error) {
         if (error.code === '23505') {
@@ -418,7 +418,7 @@ const Flota = {
     confirmAction(
       `¿Seguro que quieres ${action} ${item.matricula}?`,
       async () => {
-        const { error } = await supabase.from(table).update({ activo: newState }).eq('id', itemId);
+        const { error } = await sbUpdate(table, 'id=eq.' + itemId, { activo: newState });
 
         if (error) {
           showToast(`Error al ${action}`, 'error');
