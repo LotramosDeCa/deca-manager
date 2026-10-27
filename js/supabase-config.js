@@ -56,27 +56,54 @@ function sbToken() {
   return SB_TOKEN || SUPABASE_ANON_KEY;
 }
 
-async function sbSelect(table, params) {
+// Petición base. Devuelve siempre { data, error } igual que el SDK,
+// conservando el código de error de Postgres (p. ej. 23505 duplicado).
+async function sbRequest(method, table, params, body) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15000);
   try {
-    const res = await fetch(SUPABASE_URL + '/rest/v1/' + table + '?' + params, {
+    const opts = {
+      method,
       headers: {
         'apikey': SUPABASE_ANON_KEY,
-        'Authorization': 'Bearer ' + sbToken()
+        'Authorization': 'Bearer ' + sbToken(),
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
       },
       signal: controller.signal
-    });
+    };
+    if (body !== undefined) opts.body = JSON.stringify(body);
+
+    const res = await fetch(SUPABASE_URL + '/rest/v1/' + table + '?' + params, opts);
     clearTimeout(timer);
+
+    const txt = await res.text();
+    let parsed = null;
+    try { parsed = txt ? JSON.parse(txt) : null; } catch (e) { /* no era JSON */ }
+
     if (!res.ok) {
-      return { data: null, error: { message: (await res.text()) || ('HTTP ' + res.status) } };
+      return {
+        data: null,
+        error: {
+          message: (parsed && parsed.message) || txt || ('HTTP ' + res.status),
+          code: parsed && parsed.code,
+          details: parsed && parsed.details
+        }
+      };
     }
-    return { data: await res.json(), error: null };
+    return { data: parsed, error: null };
   } catch (e) {
     clearTimeout(timer);
-    return { data: null, error: { message: e.name === 'AbortError' ? 'Tiempo de espera agotado' : e.message } };
+    return {
+      data: null,
+      error: { message: e.name === 'AbortError' ? 'Tiempo de espera agotado' : e.message }
+    };
   }
 }
+
+const sbSelect = (table, params) => sbRequest('GET', table, params);
+const sbInsert = (table, record) => sbRequest('POST', table, '', record);
+const sbUpdate = (table, params, body) => sbRequest('PATCH', table, params, body);
 
 async function initSupabase() {
   if (typeof window.supabase !== 'undefined') {
