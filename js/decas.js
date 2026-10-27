@@ -116,10 +116,10 @@ const Decas = {
 
     container.innerHTML = items.map(d => {
       const estadoClass = {
-        activo: 'badge-activo',
+        activo: 'badge-info',
         finalizado: 'badge-success',
         modificado: 'badge-warning',
-        anulado: 'badge-inactivo',
+        anulado: 'badge-danger',
       }[d.estado] || 'badge-info';
 
       const estadoLabel = {
@@ -172,7 +172,7 @@ const Decas = {
     }[d.estado] || d.estado;
 
     const estadoClass = {
-      activo: 'badge-activo', finalizado: 'badge-success', modificado: 'badge-warning', anulado: 'badge-inactivo',
+      activo: 'badge-info', finalizado: 'badge-success', modificado: 'badge-warning', anulado: 'badge-danger',
     }[d.estado] || 'badge-info';
 
     showModal(d.referencia || 'DeCA', `
@@ -243,22 +243,25 @@ const Decas = {
         </div>
       </div>
     `, `
-      <button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>
-      ${d.estado === 'activo' ? `
-        <button class="btn btn-secondary" style="color:var(--danger); border-color:var(--danger);" onclick="Decas.cambiarEstado('${d.id}', 'anulado')">Anular</button>
-        <button class="btn btn-primary" style="background:#059669;" onclick="Decas.cambiarEstado('${d.id}', 'finalizado')">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; width:100%;">
+        <button class="btn btn-primary" style="background:#7c3aed; justify-content:center;" onclick="Decas.mostrarQR('${d.id}')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/><line x1="20" y1="14" x2="20" y2="20"/><line x1="14" y1="20" x2="20" y2="20"/></svg>
+          QR
+        </button>
+        <button class="btn btn-primary" style="justify-content:center;" onclick="Decas.generarPDF('${d.id}')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          PDF
+        </button>
+        ${d.estado === 'activo' ? `
+        <button class="btn btn-primary" style="background:#059669; justify-content:center;" onclick="Decas.cambiarEstado('${d.id}', 'finalizado')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
           Finalizar
         </button>
-      ` : ''}
-      <button class="btn btn-primary" style="background:#7c3aed;" onclick="Decas.mostrarQR('${d.id}')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/><line x1="20" y1="14" x2="20" y2="20"/><line x1="14" y1="20" x2="20" y2="20"/></svg>
-        QR
-      </button>
-      <button class="btn btn-primary" onclick="Decas.generarPDF('${d.id}')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        PDF
-      </button>
+        <button class="btn btn-secondary" style="color:var(--danger); border-color:var(--danger); justify-content:center;" onclick="Decas.cambiarEstado('${d.id}', 'anulado')">Anular</button>
+        ` : `
+        <button class="btn btn-secondary" style="grid-column:1/-1; justify-content:center;" onclick="closeModal()">Cerrar</button>
+        `}
+      </div>
     `);
   },
 
