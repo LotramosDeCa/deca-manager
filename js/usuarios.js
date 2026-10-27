@@ -265,10 +265,7 @@ const Usuarios = {
     btn.querySelector('.btn-spinner').hidden = false;
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', userId);
+      const { error } = await sbUpdate('profiles', 'id=eq.' + userId, updates);
 
       if (error) throw new Error(error.message);
 
@@ -302,10 +299,7 @@ const Usuarios = {
     confirmAction(
       `¿Seguro que quieres ${action} a ${user.nombre} ${user.apellidos}?`,
       async () => {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ activo: newState })
-          .eq('id', userId);
+        const { error } = await sbUpdate('profiles', 'id=eq.' + userId, { activo: newState });
 
         if (error) {
           showToast(`Error al ${action} usuario`, 'error');
