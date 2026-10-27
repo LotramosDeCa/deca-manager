@@ -54,6 +54,7 @@ const Decas = {
 
   // ====== CARGAR LISTA ======
   async loadDecas() {
+    console.log('[DeCA] loadDecas iniciando...');
     try {
       let query = supabase
         .from('decas')
@@ -80,6 +81,7 @@ const Decas = {
     }
 
     // SIEMPRE renderizar, incluso si la lista está vacía por error
+    console.log('[DeCA] loadDecas completado, items:', this.list.length);
     this.renderList();
   },
 
@@ -484,6 +486,7 @@ const Decas = {
   async crearDeca() {
     const btn = document.getElementById('deca-confirm-btn');
     const errorEl = document.getElementById('deca-confirm-error');
+    if (!errorEl || !btn) return;
     errorEl.hidden = true;
 
     btn.disabled = true;
@@ -492,6 +495,7 @@ const Decas = {
 
     try {
       const r = this._pendingRecord;
+      if (!r) throw new Error('No hay datos pendientes');
       const referencia = this.generarReferencia();
       const qrUrl = `https://deca-manager.netlify.app/deca.html?ref=${referencia}`;
 
@@ -499,7 +503,20 @@ const Decas = {
         referencia,
         version: 1,
         estado: 'activo',
-        ...r,
+        fecha_transporte: r.fecha_transporte,
+        num_expedicion: r.num_expedicion,
+        origen: r.origen,
+        destino: r.destino,
+        descripcion_mercancia: r.descripcion_mercancia,
+        peso: r.peso,
+        bultos: r.bultos,
+        vehiculo_id: r.vehiculo_id,
+        matricula_vehiculo: r.matricula_vehiculo,
+        remolque_id: r.remolque_id,
+        matricula_remolque: r.matricula_remolque,
+        conductor_id: r.conductor_id,
+        nombre_conductor: r.nombre_conductor,
+        dni_conductor: r.dni_conductor,
         empresa: this.EMPRESA.nombre,
         nif_empresa: this.EMPRESA.nif || null,
         num_autorizacion: this.EMPRESA.num_autorizacion || null,
@@ -507,19 +524,23 @@ const Decas = {
         creado_por: Auth.currentProfile.id,
       };
 
+      console.log('[DeCA] Insertando...', referencia);
       const { data, error } = await supabase.from('decas').insert(record).select().single();
       if (error) throw new Error(error.message);
+      console.log('[DeCA] Creada OK:', referencia);
 
       closeModal();
       showToast(`DeCA ${referencia} creada`);
       this._pendingRecord = null;
 
-      // Recargar lista
+      console.log('[DeCA] Recargando lista...');
       await this.loadDecas();
+      console.log('[DeCA] Lista recargada OK');
 
     } catch (err) {
-      // Solo mostrar error si el modal sigue visible
-      if (errorEl && !document.getElementById('modal-overlay')?.hidden) {
+      console.error('[DeCA] Error creando:', err);
+      const modal = document.getElementById('modal-overlay');
+      if (errorEl && modal && !modal.hidden) {
         errorEl.textContent = err.message;
         errorEl.hidden = false;
       } else {
