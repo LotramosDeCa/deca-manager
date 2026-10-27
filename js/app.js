@@ -217,35 +217,49 @@ const App = {
   async loadDashboardStats(isAdmin) {
     console.log('[DASH] Inicio loadDashboardStats');
     try {
-      // Recrear cliente Supabase para evitar conexiones bloqueadas
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      // Usar fetch directo con timeout (el SDK se bloquea en visitas sucesivas)
+      const session = await supabase.auth.getSession();
+      const token = session?.data?.session?.access_token || SUPABASE_ANON_KEY;
+      const base = SUPABASE_URL + '/rest/v1';
+
+      const dashFetch = async (url) => {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 6000);
+        try {
+          const res = await fetch(base + url, {
+            headers: {
+              'apikey': SUPABASE_ANON_KEY,
+              'Authorization': 'Bearer ' + token
+            },
+            signal: ctrl.signal
+          });
+          clearTimeout(timer);
+          return await res.json();
+        } catch (e) {
+          clearTimeout(timer);
+          console.warn('[DASH] fetch falló:', url, e.message);
+          return null;
+        }
+      };
 
       if (isAdmin) {
         console.log('[DASH] Query decas...');
-        const { data: decas, error: decasErr } = await supabase
-          .from('decas')
-          .select('id, estado, created_at, referencia, origen, destino, fecha_transporte, matricula_vehiculo, nombre_conductor, version')
-          .order('created_at', { ascending: false });
+        const allDecas = await dashFetch('/decas?select=id,estado,created_at,referencia,origen,destino,fecha_transporte,matricula_vehiculo,nombre_conductor,version&order=created_at.desc') || [];
+        console.log('[DASH] Decas recibidas:', allDecas.length);
 
-        console.log('[DASH] Decas recibidas:', decas?.length, 'error:', decasErr?.message);
-        const allDecas = decas || [];
         const activas = allDecas.filter(d => d.estado === 'activo').length;
         const finalizadas = allDecas.filter(d => d.estado === 'finalizado').length;
         const ultimas = allDecas.slice(0, 5);
 
-        console.log('[DASH] Query profiles...');
-        const { count: conductoresCount } = await supabase
-          .from('profiles').select('id', { count: 'exact', head: true }).eq('activo', true);
-        console.log('[DASH] Query vehiculos...');
-        const { count: vehiculosCount } = await supabase
-          .from('vehiculos').select('id', { count: 'exact', head: true }).eq('activo', true);
+        const profiles = await dashFetch('/profiles?select=id&activo=eq.true') || [];
+        const vehiculos = await dashFetch('/vehiculos?select=id&activo=eq.true') || [];
 
         const el = document.getElementById('stat-activas');
         if (!el) return;
         el.textContent = activas;
         document.getElementById('stat-finalizadas').textContent = finalizadas;
-        document.getElementById('stat-conductores').textContent = conductoresCount || 0;
-        document.getElementById('stat-vehiculos').textContent = vehiculosCount || 0;
+        document.getElementById('stat-conductores').textContent = profiles.length;
+        document.getElementById('stat-vehiculos').textContent = vehiculos.length;
         this.renderUltimasDeCA(ultimas);
 
       } else {
@@ -253,13 +267,8 @@ const App = {
         const now = new Date();
         const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
 
-        const { data: decas } = await supabase
-          .from('decas')
-          .select('id, estado, fecha_transporte, created_at, referencia, origen, destino, matricula_vehiculo, nombre_conductor, version')
-          .eq('conductor_id', pid)
-          .order('created_at', { ascending: false });
+        const allDecas = await dashFetch('/decas?select=id,estado,fecha_transporte,created_at,referencia,origen,destino,matricula_vehiculo,nombre_conductor,version&conductor_id=eq.' + pid + '&order=created_at.desc') || [];
 
-        const allDecas = decas || [];
         const activas = allDecas.filter(d => d.estado === 'activo').length;
         const finalizadas = allDecas.filter(d => d.estado === 'finalizado').length;
         const mes = allDecas.filter(d => d.fecha_transporte && d.fecha_transporte >= firstOfMonth).length;
@@ -277,7 +286,6 @@ const App = {
       console.log('[DASH] Stats renderizadas OK');
     } catch (err) {
       console.warn('[DASH] Error cargando stats:', err);
-      // No bloquear — el dashboard se muestra con lo que haya
     }
   },
 
