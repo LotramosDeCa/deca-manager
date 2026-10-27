@@ -400,7 +400,7 @@ const Decas = {
         nif_empresa: this.EMPRESA.nif || null,
         num_autorizacion: this.EMPRESA.num_autorizacion || null,
         qr_code: qrUrl,
-        creado_por: Auth.currentUser.id,
+        creado_por: Auth.currentProfile.id,
       };
 
       const { data, error } = await supabase.from('decas').insert(record).select().single();
