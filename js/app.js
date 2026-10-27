@@ -83,11 +83,17 @@ const App = {
     });
   },
 
+  _navId: 0, // Protección contra navegaciones simultáneas
+
   async navigate(view) {
+    const navId = ++this._navId; // Cada navegación tiene un ID único
     this.currentView = view;
     const content = document.getElementById('main-content');
     const title = document.getElementById('header-title');
     const backBtn = document.getElementById('back-btn');
+
+    // Cerrar cualquier modal abierto (evita bloqueos)
+    closeModal();
 
     // Actualizar nav activa
     document.querySelectorAll('.nav-item').forEach(btn => {
@@ -124,10 +130,13 @@ const App = {
           await this.renderDashboard(content);
       }
     } catch (err) {
+      // Solo mostrar error si ESTA navegación sigue siendo la activa
+      if (navId !== this._navId) return;
       console.error('Error navegando a', view, err);
       content.innerHTML = `
         <div class="empty-state">
           <p style="color:var(--danger);">Error al cargar la vista</p>
+          <p style="font-size:12px; color:var(--gray-400); margin-top:4px;">${err.message || ''}</p>
           <button class="btn btn-primary btn-sm" onclick="App.navigate('${view}')" style="margin-top:12px;">Reintentar</button>
         </div>
       `;
@@ -198,8 +207,8 @@ const App = {
       </div>
     `;
 
-    // Cargar stats reales
-    this.loadDashboardStats(isAdmin);
+    // Cargar stats reales (con await para que navigate espere)
+    await this.loadDashboardStats(isAdmin);
   },
 
   async loadDashboardStats(isAdmin) {
