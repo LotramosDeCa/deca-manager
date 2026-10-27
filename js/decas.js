@@ -270,9 +270,9 @@ const Decas = {
 
     // Cargar vehículos y remolques activos + conductores
     const [vehiculos, remolques, conductores] = await Promise.all([
-      supabase.from('vehiculos').select('id, matricula, marca, modelo').eq('activo', true).order('matricula'),
-      supabase.from('remolques').select('id, matricula, marca, modelo').eq('activo', true).order('matricula'),
-      supabase.from('profiles').select('id, user_id, nombre, apellidos, dni').eq('activo', true).eq('rol', 'conductor').order('nombre'),
+      sbSelect('vehiculos', 'select=id,matricula,marca,modelo&activo=eq.true&order=matricula.asc'),
+      sbSelect('remolques', 'select=id,matricula,marca,modelo&activo=eq.true&order=matricula.asc'),
+      sbSelect('profiles', 'select=id,user_id,nombre,apellidos,dni&activo=eq.true&rol=eq.conductor&order=nombre.asc'),
     ]);
 
     this.vehiculosActivos = vehiculos.data || [];
@@ -280,7 +280,7 @@ const Decas = {
     const conductoresActivos = conductores.data || [];
 
     // Incluir admins también como posibles conductores
-    const admins = await supabase.from('profiles').select('id, user_id, nombre, apellidos, dni').eq('activo', true).eq('rol', 'admin').order('nombre');
+    const admins = await sbSelect('profiles', 'select=id,user_id,nombre,apellidos,dni&activo=eq.true&rol=eq.admin&order=nombre.asc');
     const todosConductores = [...conductoresActivos, ...(admins.data || [])];
 
     const hoy = new Date().toISOString().split('T')[0];
@@ -522,8 +522,9 @@ const Decas = {
       };
 
       console.log('[DeCA] Insertando...', referencia);
-      const { data, error } = await supabase.from('decas').insert(record).select().single();
+      const { data: inserted, error } = await sbInsert('decas', record);
       if (error) throw new Error(error.message);
+      const data = Array.isArray(inserted) ? inserted[0] : inserted;
       console.log('[DeCA] Creada OK:', referencia);
 
       closeModal();
@@ -569,9 +570,10 @@ const Decas = {
     const deca = this.list.find(d => d.id === decaId);
     if (!deca) {
       // Cargar si no está en la lista
-      const { data } = await supabase.from('decas').select('*').eq('id', decaId).single();
-      if (!data) { showToast('DeCA no encontrada', 'error'); return; }
-      this._generarPDFConDatos(data);
+      const { data } = await sbSelect('decas', 'select=*&id=eq.' + decaId);
+      const fila = Array.isArray(data) ? data[0] : data;
+      if (!fila) { showToast('DeCA no encontrada', 'error'); return; }
+      this._generarPDFConDatos(fila);
       return;
     }
     this._generarPDFConDatos(deca);
@@ -649,10 +651,7 @@ const Decas = {
           updates.fecha_fin_servicio = new Date().toISOString();
         }
 
-        const { error } = await supabase
-          .from('decas')
-          .update(updates)
-          .eq('id', decaId);
+        const { error } = await sbUpdate('decas', 'id=eq.' + decaId, updates);
 
         if (error) throw new Error(error.message);
 
