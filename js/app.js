@@ -83,7 +83,7 @@ const App = {
     });
   },
 
-  navigate(view) {
+  async navigate(view) {
     this.currentView = view;
     const content = document.getElementById('main-content');
     const title = document.getElementById('header-title');
@@ -98,26 +98,39 @@ const App = {
     backBtn.hidden = true;
     backBtn.onclick = null;
 
-    switch (view) {
-      case 'dashboard':
-        title.textContent = 'Dashboard';
-        this.renderDashboard(content);
-        break;
-      case 'decas':
-        title.textContent = Auth.isAdmin() ? 'DeCA' : 'Mis DeCA';
-        Decas.render(content);
-        break;
-      case 'vehiculos':
-        title.textContent = 'Flota';
-        Flota.render(content);
-        break;
-      case 'usuarios':
-        title.textContent = 'Equipo';
-        Usuarios.render(content);
-        break;
-      default:
-        title.textContent = 'Dashboard';
-        this.renderDashboard(content);
+    // Limpiar contenido antes de cargar la nueva vista
+    content.innerHTML = '<div style="display:flex; justify-content:center; padding:40px;"><div class="spinner" style="width:32px; height:32px; border:3px solid #e5e7eb; border-top-color:#1a56db; border-radius:50%; animation:spin 0.8s linear infinite;"></div></div>';
+
+    try {
+      switch (view) {
+        case 'dashboard':
+          title.textContent = 'Dashboard';
+          await this.renderDashboard(content);
+          break;
+        case 'decas':
+          title.textContent = Auth.isAdmin() ? 'DeCA' : 'Mis DeCA';
+          await Decas.render(content);
+          break;
+        case 'vehiculos':
+          title.textContent = 'Flota';
+          await Flota.render(content);
+          break;
+        case 'usuarios':
+          title.textContent = 'Equipo';
+          await Usuarios.render(content);
+          break;
+        default:
+          title.textContent = 'Dashboard';
+          await this.renderDashboard(content);
+      }
+    } catch (err) {
+      console.error('Error navegando a', view, err);
+      content.innerHTML = `
+        <div class="empty-state">
+          <p style="color:var(--danger);">Error al cargar la vista</p>
+          <button class="btn btn-primary btn-sm" onclick="App.navigate('${view}')" style="margin-top:12px;">Reintentar</button>
+        </div>
+      `;
     }
   },
 
@@ -179,13 +192,9 @@ const App = {
       <div class="section-header">
         <h3>Últimas DeCA</h3>
       </div>
-      <div class="empty-state">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14,2 14,8 20,8"/>
-        </svg>
-        <p>Aún no hay DeCA creadas</p>
-        <p style="font-size:12px; margin-top:8px;">(Se habilitará en el siguiente chunk)</p>
+      <div id="dashboard-ultimas-deca">
+        <div class="skeleton" style="height:60px; margin-bottom:8px; border-radius:10px;"></div>
+        <div class="skeleton" style="height:60px; margin-bottom:8px; border-radius:10px;"></div>
       </div>
     `;
 
@@ -196,39 +205,89 @@ const App = {
   async loadDashboardStats(isAdmin) {
     try {
       if (isAdmin) {
-        // Stats admin: DeCA activas, finalizadas, conductores, vehículos
-        const [activas, finalizadas, conductores, vehiculos] = await Promise.all([
+        // Stats admin: DeCA activas, finalizadas, conductores (todos los perfiles activos), vehículos
+        const [activas, finalizadas, conductores, vehiculos, ultimas] = await Promise.all([
           supabase.from('decas').select('id', { count: 'exact', head: true }).eq('estado', 'activo'),
           supabase.from('decas').select('id', { count: 'exact', head: true }).eq('estado', 'finalizado'),
-          supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('rol', 'conductor').eq('activo', true),
+          supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('activo', true),
           supabase.from('vehiculos').select('id', { count: 'exact', head: true }).eq('activo', true),
+          supabase.from('decas').select('*').order('created_at', { ascending: false }).limit(5),
         ]);
 
         document.getElementById('stat-activas').textContent = activas.count || 0;
         document.getElementById('stat-finalizadas').textContent = finalizadas.count || 0;
         document.getElementById('stat-conductores').textContent = conductores.count || 0;
         document.getElementById('stat-vehiculos').textContent = vehiculos.count || 0;
+        this.renderUltimasDeCA(ultimas.data || []);
       } else {
         // Stats conductor
         const pid = Auth.currentProfile.id;
         const now = new Date();
         const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
 
-        const [activas, finalizadas, mes, modificadas] = await Promise.all([
+        const [activas, finalizadas, mes, modificadas, ultimas] = await Promise.all([
           supabase.from('decas').select('id', { count: 'exact', head: true }).eq('conductor_id', pid).eq('estado', 'activo'),
           supabase.from('decas').select('id', { count: 'exact', head: true }).eq('conductor_id', pid).eq('estado', 'finalizado'),
           supabase.from('decas').select('id', { count: 'exact', head: true }).eq('conductor_id', pid).gte('fecha_transporte', firstOfMonth),
           supabase.from('decas').select('id', { count: 'exact', head: true }).eq('conductor_id', pid).eq('estado', 'modificado'),
+          supabase.from('decas').select('*').eq('conductor_id', pid).order('created_at', { ascending: false }).limit(5),
         ]);
 
         document.getElementById('stat-activas').textContent = activas.count || 0;
         document.getElementById('stat-finalizadas').textContent = finalizadas.count || 0;
         document.getElementById('stat-mes').textContent = mes.count || 0;
         document.getElementById('stat-modificadas').textContent = modificadas.count || 0;
+        this.renderUltimasDeCA(ultimas.data || []);
       }
     } catch (err) {
       console.warn('Error cargando stats:', err);
     }
+  },
+
+  renderUltimasDeCA(decas) {
+    const container = document.getElementById('dashboard-ultimas-deca');
+    if (!container) return;
+
+    if (decas.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14,2 14,8 20,8"/>
+          </svg>
+          <p>Aún no hay DeCA creadas</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = decas.map(d => {
+      const estadoClass = {
+        activo: 'badge-activo', finalizado: 'badge-success', modificado: 'badge-warning', anulado: 'badge-inactivo',
+      }[d.estado] || 'badge-info';
+      const estadoLabel = {
+        activo: 'Activa', finalizado: 'Finalizada', modificado: 'Modificada', anulado: 'Anulada',
+      }[d.estado] || d.estado;
+      const fecha = d.fecha_transporte
+        ? new Date(d.fecha_transporte).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+        : '—';
+
+      return `
+        <div class="list-card" style="cursor:pointer;" onclick="App.navigate('decas')">
+          <div class="list-card-icon" style="background:var(--primary-50); color:var(--primary);">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14,2 14,8 20,8"/>
+            </svg>
+          </div>
+          <div class="list-card-info">
+            <div class="name">${d.referencia || '—'}</div>
+            <div class="detail">${d.origen || '?'} → ${d.destino || '?'} · ${fecha}</div>
+          </div>
+          <span class="badge ${estadoClass}" style="font-size:10px;">${estadoLabel}</span>
+        </div>
+      `;
+    }).join('');
   },
 
   getGreeting() {
