@@ -237,6 +237,10 @@ const Decas = {
       </div>
     `, `
       <button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>
+      <button class="btn btn-primary" style="background:#059669;" onclick="Decas.mostrarQR('${d.id}')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/><line x1="20" y1="14" x2="20" y2="20"/><line x1="14" y1="20" x2="20" y2="20"/></svg>
+        QR
+      </button>
       ${d.estado === 'activo' ? `<button class="btn btn-primary" onclick="Decas.generarPDF('${d.id}')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         PDF
@@ -451,6 +455,66 @@ const Decas = {
     this._generarPDFConDatos(deca);
   },
 
+  // ====== MOSTRAR QR EN PANTALLA (para Guardia Civil) ======
+  mostrarQR(decaId) {
+    const d = this.list.find(x => x.id === decaId);
+    if (!d) { showToast('DeCA no encontrada', 'error'); return; }
+
+    const qrUrl = d.qr_code || `https://deca-manager.netlify.app/deca.html?ref=${d.referencia}`;
+
+    // Crear overlay a pantalla completa
+    const overlay = document.createElement('div');
+    overlay.id = 'qr-fullscreen';
+    overlay.style.cssText = `
+      position:fixed; top:0; left:0; right:0; bottom:0;
+      background:white; z-index:10000;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      padding:24px;
+    `;
+
+    overlay.innerHTML = `
+      <div style="text-align:center; width:100%; max-width:400px;">
+        <div style="margin-bottom:16px;">
+          <svg width="40" height="40" viewBox="0 0 56 56" fill="none">
+            <rect width="56" height="56" rx="14" fill="#1a56db"/>
+            <path d="M16 18h24v4H16zM16 26h24v4H16zM16 34h16v4H16zM38 30l6 8h-12z" fill="white"/>
+          </svg>
+        </div>
+        <h2 style="font-size:18px; font-weight:700; color:#111827; margin-bottom:4px;">DeCA — ${d.referencia}</h2>
+        <p style="font-size:13px; color:#6b7280; margin-bottom:20px;">${d.origen || '?'} → ${d.destino || '?'} · ${d.fecha_transporte ? new Date(d.fecha_transporte).toLocaleDateString('es-ES') : '—'}</p>
+        <canvas id="qr-canvas-full" style="width:260px; height:260px; border:3px solid #e5e7eb; border-radius:12px; padding:12px; background:white;"></canvas>
+        <p style="font-size:12px; color:#9ca3af; margin-top:12px;">Escanear para descargar el documento DeCA</p>
+        <p style="font-size:11px; color:#d1d5db; margin-top:4px;">Conforme a Orden TRM/282/2026</p>
+        <button id="qr-close-btn" style="
+          margin-top:24px; padding:14px 40px;
+          background:#1a56db; color:white; border:none; border-radius:10px;
+          font-size:15px; font-weight:600; cursor:pointer; font-family:inherit;
+        ">Cerrar</button>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Generar QR con QRious directamente en el canvas
+    if (typeof QRious !== 'undefined') {
+      const canvas = document.getElementById('qr-canvas-full');
+      new QRious({
+        element: canvas,
+        value: qrUrl,
+        size: 520,
+        level: 'M',
+        backgroundAlpha: 1,
+        foreground: '#000000',
+        background: '#ffffff',
+      });
+    }
+
+    // Cerrar
+    document.getElementById('qr-close-btn').addEventListener('click', () => {
+      overlay.remove();
+    });
+  },
+
   async _generarPDFConDatos(d) {
     try {
       // Verificar que jsPDF está disponible
@@ -487,18 +551,20 @@ const Decas = {
       y = 40;
       doc.setTextColor(0, 0, 0);
 
-      // ---- CÓDIGO QR ----
+      // ---- CÓDIGO QR (esquina superior derecha, debajo de cabecera) ----
       const qrUrl = d.qr_code || `https://deca-manager.netlify.app/deca.html?ref=${d.referencia}`;
+      const qrSize = 35;
+      const qrX = pageWidth - margin - qrSize;
+      const qrY = y;
       if (typeof QRious !== 'undefined') {
         try {
-          const qr = new QRious({ value: qrUrl, size: 300, level: 'M' });
+          const qr = new QRious({ value: qrUrl, size: 400, level: 'M' });
           const qrData = qr.toDataURL('image/png');
-          const qrSize = 40;
-          doc.addImage(qrData, 'PNG', pageWidth - margin - qrSize, y, qrSize, qrSize);
+          doc.addImage(qrData, 'PNG', qrX, qrY, qrSize, qrSize);
 
           doc.setFontSize(7);
           doc.setTextColor(120, 120, 120);
-          doc.text('Escanear para verificar', pageWidth - margin - qrSize / 2, y + qrSize + 4, { align: 'center' });
+          doc.text('Escanear para verificar', qrX + qrSize / 2, qrY + qrSize + 4, { align: 'center' });
           doc.setTextColor(0, 0, 0);
         } catch (qrErr) {
           console.warn('Error generando QR:', qrErr);
