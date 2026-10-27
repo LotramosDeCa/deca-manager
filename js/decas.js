@@ -488,12 +488,14 @@ const Decas = {
       doc.setTextColor(0, 0, 0);
 
       // ---- CÓDIGO QR ----
-      if (d.qr_code && typeof QRCode !== 'undefined') {
+      // Si no hay qr_code guardado, generar la URL
+      const qrUrl = d.qr_code || `https://deca-manager.netlify.app/deca.html?ref=${d.referencia}`;
+      if (typeof QRCode !== 'undefined') {
         try {
           const qrCanvas = document.createElement('canvas');
-          await QRCode.toCanvas(qrCanvas, d.qr_code, { width: 200, margin: 1 });
+          await QRCode.toCanvas(qrCanvas, qrUrl, { width: 300, margin: 1 });
           const qrData = qrCanvas.toDataURL('image/png');
-          const qrSize = 35;
+          const qrSize = 40;
           doc.addImage(qrData, 'PNG', pageWidth - margin - qrSize, y, qrSize, qrSize);
 
           doc.setFontSize(7);
@@ -503,6 +505,8 @@ const Decas = {
         } catch (qrErr) {
           console.warn('Error generando QR:', qrErr);
         }
+      } else {
+        console.warn('QRCode library not loaded');
       }
 
       // ---- DATOS DEL TRANSPORTE ----
