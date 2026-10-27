@@ -548,32 +548,10 @@ const Decas = {
       doc.setFont('helvetica', 'normal');
       doc.text(`Ref: ${d.referencia || '—'}  |  Versión: ${d.version || 1}`, pageWidth / 2, 29, { align: 'center' });
 
-      y = 40;
+      y = 38;
       doc.setTextColor(0, 0, 0);
 
-      // ---- CÓDIGO QR (esquina superior derecha, debajo de cabecera) ----
-      const qrUrl = d.qr_code || `https://deca-manager.netlify.app/deca.html?ref=${d.referencia}`;
-      const qrSize = 35;
-      const qrX = pageWidth - margin - qrSize;
-      const qrY = y;
-      if (typeof QRious !== 'undefined') {
-        try {
-          const qr = new QRious({ value: qrUrl, size: 400, level: 'M' });
-          const qrData = qr.toDataURL('image/png');
-          doc.addImage(qrData, 'PNG', qrX, qrY, qrSize, qrSize);
-
-          doc.setFontSize(7);
-          doc.setTextColor(120, 120, 120);
-          doc.text('Escanear para verificar', qrX + qrSize / 2, qrY + qrSize + 4, { align: 'center' });
-          doc.setTextColor(0, 0, 0);
-        } catch (qrErr) {
-          console.warn('Error generando QR:', qrErr);
-        }
-      } else {
-        console.warn('QRious library not loaded');
-      }
-
-      // ---- DATOS DEL TRANSPORTE ----
+      // ---- HELPERS ----
       const sectionTitle = (title, posY) => {
         doc.setFillColor(240, 244, 255);
         doc.rect(margin, posY - 4, contentWidth, 7, 'F');
@@ -596,8 +574,6 @@ const Decas = {
         return posY + 12;
       };
 
-      // Sección: Datos del transporte
-      y = sectionTitle('DATOS DEL TRANSPORTE', y);
       const col1 = margin + 2;
       const col2 = margin + contentWidth / 2;
 
@@ -605,14 +581,63 @@ const Decas = {
         ? new Date(d.fecha_transporte).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
         : '—';
 
-      field('Fecha de transporte', fecha, y, col1);
-      field('N.º expedición', d.num_expedicion, y, col2);
-      y += 12;
+      // ---- CÓDIGO QR (centrado, zona propia debajo de cabecera) ----
+      const qrUrl = d.qr_code || `https://deca-manager.netlify.app/deca.html?ref=${d.referencia}`;
+      const qrSize = 32;
+      if (typeof QRious !== 'undefined') {
+        try {
+          const qr = new QRious({ value: qrUrl, size: 400, level: 'M' });
+          const qrData = qr.toDataURL('image/png');
+          // QR a la derecha, info básica a la izquierda
+          const qrX = pageWidth - margin - qrSize - 2;
+          const qrY = y;
+          doc.addImage(qrData, 'PNG', qrX, qrY, qrSize, qrSize);
 
-      field('Origen', d.origen, y, col1);
-      field('Destino', d.destino, y, col2);
-      y += 12;
+          doc.setFontSize(7);
+          doc.setTextColor(120, 120, 120);
+          doc.text('Escanear para verificar', qrX + qrSize / 2, qrY + qrSize + 3, { align: 'center' });
+          doc.setTextColor(0, 0, 0);
 
+          // Info básica al lado del QR
+          doc.setFontSize(8);
+          doc.setTextColor(120, 120, 120);
+          doc.text('Fecha de transporte', col1, y + 2);
+          doc.setFontSize(11);
+          doc.setTextColor(0, 0, 0);
+          doc.setFont('helvetica', 'bold');
+          doc.text(fecha, col1, y + 8);
+          doc.setFont('helvetica', 'normal');
+
+          doc.setFontSize(8);
+          doc.setTextColor(120, 120, 120);
+          doc.text('Ruta', col1, y + 16);
+          doc.setFontSize(11);
+          doc.setTextColor(0, 0, 0);
+          doc.setFont('helvetica', 'bold');
+          doc.text(`${d.origen || '?'}  →  ${d.destino || '?'}`, col1, y + 22);
+          doc.setFont('helvetica', 'normal');
+
+          if (d.num_expedicion) {
+            doc.setFontSize(8);
+            doc.setTextColor(120, 120, 120);
+            doc.text('N.º expedición', col1, y + 30);
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+            doc.text(d.num_expedicion, col1, y + 36);
+          }
+
+          y = qrY + qrSize + 10;
+        } catch (qrErr) {
+          console.warn('Error generando QR:', qrErr);
+          y += 4;
+        }
+      } else {
+        console.warn('QRious library not loaded');
+        y += 4;
+      }
+
+      // ---- DATOS DEL TRANSPORTE ----
+      y = sectionTitle('DATOS DEL TRANSPORTE', y);
       field('Descripción mercancía', d.descripcion_mercancia, y, col1, contentWidth - 4);
       y += 12;
 
