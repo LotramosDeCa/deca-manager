@@ -751,7 +751,7 @@ const Decas = {
           doc.setFontSize(11);
           doc.setTextColor(0, 0, 0);
           doc.setFont('helvetica', 'bold');
-          doc.text(`${d.origen || '?'}  →  ${d.destino || '?'}`, col1, y + 22);
+          doc.text(`${d.origen || '?'}  --  ${d.destino || '?'}`, col1, y + 22);
           doc.setFont('helvetica', 'normal');
 
           if (d.num_expedicion) {
