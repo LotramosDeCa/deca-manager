@@ -216,30 +216,47 @@ const App = {
 
   async loadDashboardStats(isAdmin) {
     try {
-      if (isAdmin) {
-        // UNA sola query de decas + contar en cliente (evita saturar conexiones)
-        const { data: decas } = await supabase
-          .from('decas')
-          .select('id, estado, created_at, referencia, origen, destino, fecha_transporte, matricula_vehiculo, nombre_conductor, version')
-          .order('created_at', { ascending: false });
+      // Usar fetch directo a la API REST de Supabase (evita bloqueos del SDK)
+      const token = (await supabase.auth.getSession())?.data?.session?.access_token;
+      const headers = {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + (token || SUPABASE_ANON_KEY),
+        'Content-Type': 'application/json',
+        'Prefer': 'count=exact'
+      };
+      const base = SUPABASE_URL + '/rest/v1';
 
-        const allDecas = decas || [];
+      const fetchRows = async (table, query) => {
+        const res = await fetch(base + '/' + table + '?select=*&' + query, { headers });
+        const total = parseInt(res.headers.get('content-range')?.split('/')[1] || '0', 10);
+        const data = await res.json();
+        return { data, count: total };
+      };
+
+      const fetchCount = async (table, query) => {
+        const h = { ...headers, 'Prefer': 'count=exact', 'Range-Unit': 'items', 'Range': '0-0' };
+        const res = await fetch(base + '/' + table + '?select=id&' + query, { headers: h });
+        return parseInt(res.headers.get('content-range')?.split('/')[1] || '0', 10);
+      };
+
+      if (isAdmin) {
+        // Una sola petición para todas las decas
+        const res = await fetch(base + '/decas?select=id,estado,created_at,referencia,origen,destino,fecha_transporte,matricula_vehiculo,nombre_conductor,version&order=created_at.desc', { headers });
+        const allDecas = await res.json();
+
         const activas = allDecas.filter(d => d.estado === 'activo').length;
         const finalizadas = allDecas.filter(d => d.estado === 'finalizado').length;
         const ultimas = allDecas.slice(0, 5);
 
-        // Solo 2 queries extras (secuenciales para no saturar)
-        const { count: conductoresCount } = await supabase
-          .from('profiles').select('id', { count: 'exact', head: true }).eq('activo', true);
-        const { count: vehiculosCount } = await supabase
-          .from('vehiculos').select('id', { count: 'exact', head: true }).eq('activo', true);
+        const conductoresCount = await fetchCount('profiles', 'activo=eq.true');
+        const vehiculosCount = await fetchCount('vehiculos', 'activo=eq.true');
 
         const el = document.getElementById('stat-activas');
         if (!el) return;
         el.textContent = activas;
         document.getElementById('stat-finalizadas').textContent = finalizadas;
-        document.getElementById('stat-conductores').textContent = conductoresCount || 0;
-        document.getElementById('stat-vehiculos').textContent = vehiculosCount || 0;
+        document.getElementById('stat-conductores').textContent = conductoresCount;
+        document.getElementById('stat-vehiculos').textContent = vehiculosCount;
         this.renderUltimasDeCA(ultimas);
 
       } else {
@@ -247,14 +264,9 @@ const App = {
         const now = new Date();
         const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
 
-        // UNA sola query de decas del conductor
-        const { data: decas } = await supabase
-          .from('decas')
-          .select('id, estado, fecha_transporte, created_at, referencia, origen, destino, matricula_vehiculo, nombre_conductor, version')
-          .eq('conductor_id', pid)
-          .order('created_at', { ascending: false });
+        const res = await fetch(base + '/decas?select=id,estado,fecha_transporte,created_at,referencia,origen,destino,matricula_vehiculo,nombre_conductor,version&conductor_id=eq.' + pid + '&order=created_at.desc', { headers });
+        const allDecas = await res.json();
 
-        const allDecas = decas || [];
         const activas = allDecas.filter(d => d.estado === 'activo').length;
         const finalizadas = allDecas.filter(d => d.estado === 'finalizado').length;
         const mes = allDecas.filter(d => d.fecha_transporte && d.fecha_transporte >= firstOfMonth).length;
