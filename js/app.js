@@ -215,62 +215,60 @@ const App = {
   },
 
   async loadDashboardStats(isAdmin) {
-    // Helper: query con timeout de 8 segundos
-    const withTimeout = (promise) => Promise.race([
-      promise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000))
-    ]);
-
     try {
-      console.log('[DASH] Cargando stats, isAdmin:', isAdmin);
-
       if (isAdmin) {
-        const results = await Promise.allSettled([
-          withTimeout(supabase.from('decas').select('id', { count: 'exact', head: true }).eq('estado', 'activo')),
-          withTimeout(supabase.from('decas').select('id', { count: 'exact', head: true }).eq('estado', 'finalizado')),
-          withTimeout(supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('activo', true)),
-          withTimeout(supabase.from('vehiculos').select('id', { count: 'exact', head: true }).eq('activo', true)),
-          withTimeout(supabase.from('decas').select('*').order('created_at', { ascending: false }).limit(5)),
-        ]);
+        // UNA sola query de decas + contar en cliente (evita saturar conexiones)
+        const { data: decas } = await supabase
+          .from('decas')
+          .select('id, estado, created_at, referencia, origen, destino, fecha_transporte, matricula_vehiculo, nombre_conductor, version')
+          .order('created_at', { ascending: false });
 
-        console.log('[DASH] Stats recibidas:', results.map((r, i) => r.status).join(', '));
+        const allDecas = decas || [];
+        const activas = allDecas.filter(d => d.estado === 'activo').length;
+        const finalizadas = allDecas.filter(d => d.estado === 'finalizado').length;
+        const ultimas = allDecas.slice(0, 5);
 
-        const elActivas = document.getElementById('stat-activas');
-        if (!elActivas) return;
+        // Solo 2 queries extras (secuenciales para no saturar)
+        const { count: conductoresCount } = await supabase
+          .from('profiles').select('id', { count: 'exact', head: true }).eq('activo', true);
+        const { count: vehiculosCount } = await supabase
+          .from('vehiculos').select('id', { count: 'exact', head: true }).eq('activo', true);
 
-        const val = (r) => r.status === 'fulfilled' ? r.value : null;
-        elActivas.textContent = val(results[0])?.count || 0;
-        document.getElementById('stat-finalizadas').textContent = val(results[1])?.count || 0;
-        document.getElementById('stat-conductores').textContent = val(results[2])?.count || 0;
-        document.getElementById('stat-vehiculos').textContent = val(results[3])?.count || 0;
-        this.renderUltimasDeCA(val(results[4])?.data || []);
+        const el = document.getElementById('stat-activas');
+        if (!el) return;
+        el.textContent = activas;
+        document.getElementById('stat-finalizadas').textContent = finalizadas;
+        document.getElementById('stat-conductores').textContent = conductoresCount || 0;
+        document.getElementById('stat-vehiculos').textContent = vehiculosCount || 0;
+        this.renderUltimasDeCA(ultimas);
+
       } else {
         const pid = Auth.currentProfile.id;
         const now = new Date();
         const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
 
-        const results = await Promise.allSettled([
-          withTimeout(supabase.from('decas').select('id', { count: 'exact', head: true }).eq('conductor_id', pid).eq('estado', 'activo')),
-          withTimeout(supabase.from('decas').select('id', { count: 'exact', head: true }).eq('conductor_id', pid).eq('estado', 'finalizado')),
-          withTimeout(supabase.from('decas').select('id', { count: 'exact', head: true }).eq('conductor_id', pid).gte('fecha_transporte', firstOfMonth)),
-          withTimeout(supabase.from('decas').select('id', { count: 'exact', head: true }).eq('conductor_id', pid).eq('estado', 'modificado')),
-          withTimeout(supabase.from('decas').select('*').eq('conductor_id', pid).order('created_at', { ascending: false }).limit(5)),
-        ]);
+        // UNA sola query de decas del conductor
+        const { data: decas } = await supabase
+          .from('decas')
+          .select('id, estado, fecha_transporte, created_at, referencia, origen, destino, matricula_vehiculo, nombre_conductor, version')
+          .eq('conductor_id', pid)
+          .order('created_at', { ascending: false });
 
-        console.log('[DASH] Stats recibidas:', results.map((r, i) => r.status).join(', '));
+        const allDecas = decas || [];
+        const activas = allDecas.filter(d => d.estado === 'activo').length;
+        const finalizadas = allDecas.filter(d => d.estado === 'finalizado').length;
+        const mes = allDecas.filter(d => d.fecha_transporte && d.fecha_transporte >= firstOfMonth).length;
+        const modificadas = allDecas.filter(d => d.estado === 'modificado').length;
+        const ultimas = allDecas.slice(0, 5);
 
-        const elActivas2 = document.getElementById('stat-activas');
-        if (!elActivas2) return;
-
-        const val = (r) => r.status === 'fulfilled' ? r.value : null;
-        elActivas2.textContent = val(results[0])?.count || 0;
-        document.getElementById('stat-finalizadas').textContent = val(results[1])?.count || 0;
-        document.getElementById('stat-mes').textContent = val(results[2])?.count || 0;
-        document.getElementById('stat-modificadas').textContent = val(results[3])?.count || 0;
-        this.renderUltimasDeCA(val(results[4])?.data || []);
+        const el = document.getElementById('stat-activas');
+        if (!el) return;
+        el.textContent = activas;
+        document.getElementById('stat-finalizadas').textContent = finalizadas;
+        document.getElementById('stat-mes').textContent = mes;
+        document.getElementById('stat-modificadas').textContent = modificadas;
+        this.renderUltimasDeCA(ultimas);
       }
-
-      console.log('[DASH] Stats renderizadas OK');
     } catch (err) {
       console.warn('Error cargando stats:', err);
     }
