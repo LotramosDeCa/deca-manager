@@ -71,7 +71,21 @@ const Auth = {
 
   // Logout
   async logout() {
-    await supabase.auth.signOut();
+    // Avisar a Supabase, pero SIN esperar: signOut() puede quedarse
+    // colgado y entonces no se cerraría nunca la sesión.
+    try { supabase.auth.signOut(); } catch (e) { /* ignorar */ }
+
+    // Borrar la sesión local directamente
+    try {
+      Object.keys(localStorage)
+        .filter(k => k.startsWith('sb-'))
+        .forEach(k => localStorage.removeItem(k));
+    } catch (e) { /* storage bloqueado */ }
+
+    SB_TOKEN = null;
+    App._authToken = null;
+    this.currentProfile = null;
+    App.showLogin();
   },
 
   // Es admin?
