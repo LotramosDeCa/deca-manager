@@ -13,13 +13,13 @@ const Auth = {
     // Comprobar sesión existente
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
-      await this.loadProfile(session.user);
+      await this.loadProfile(session.user, session.access_token);
     }
 
     // Escuchar cambios de estado de auth
     supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        await this.loadProfile(session.user);
+        await this.loadProfile(session.user, session.access_token);
         App.showApp();
       } else if (event === 'SIGNED_OUT') {
         this.currentUser = null;
@@ -32,13 +32,12 @@ const Auth = {
   },
 
   // Cargar perfil del usuario
-  async loadProfile(user) {
+  async loadProfile(user, accessToken) {
     this.currentUser = user;
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
+    if (accessToken) SB_TOKEN = accessToken;
+
+    const { data: filas, error } = await sbSelect('profiles', 'select=*&user_id=eq.' + user.id);
+    const data = Array.isArray(filas) ? filas[0] : filas;
 
     if (error || !data) {
       console.error('Error cargando perfil:', error);
