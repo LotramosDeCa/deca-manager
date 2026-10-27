@@ -111,8 +111,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
   <!-- jsPDF -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  <!-- QRCode -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <!-- QRious (generador QR para navegador) -->
+  <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
 
   <script>
     const SUPABASE_URL = 'https://dzotgifxgjfvpprjffow.supabase.co';
@@ -214,12 +214,12 @@
       doc.setTextColor(0, 0, 0);
 
       // ===== QR =====
-      if (d.qr_code && typeof QRCode !== 'undefined') {
+      const qrUrl = d.qr_code || `https://deca-manager.netlify.app/deca.html?ref=${d.referencia}`;
+      if (typeof QRious !== 'undefined') {
         try {
-          const qrCanvas = document.createElement('canvas');
-          await QRCode.toCanvas(qrCanvas, d.qr_code, { width: 200, margin: 1 });
-          const qrData = qrCanvas.toDataURL('image/png');
-          const qrSize = 35;
+          const qr = new QRious({ value: qrUrl, size: 300, level: 'M' });
+          const qrData = qr.toDataURL('image/png');
+          const qrSize = 40;
           doc.addImage(qrData, 'PNG', pageWidth - margin - qrSize, y, qrSize, qrSize);
           doc.setFontSize(7);
           doc.setTextColor(120, 120, 120);
