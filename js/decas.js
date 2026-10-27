@@ -244,14 +244,21 @@ const Decas = {
       </div>
     `, `
       <button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>
-      <button class="btn btn-primary" style="background:#059669;" onclick="Decas.mostrarQR('${d.id}')">
+      ${d.estado === 'activo' ? `
+        <button class="btn btn-secondary" style="color:var(--danger); border-color:var(--danger);" onclick="Decas.cambiarEstado('${d.id}', 'anulado')">Anular</button>
+        <button class="btn btn-primary" style="background:#059669;" onclick="Decas.cambiarEstado('${d.id}', 'finalizado')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+          Finalizar
+        </button>
+      ` : ''}
+      <button class="btn btn-primary" style="background:#7c3aed;" onclick="Decas.mostrarQR('${d.id}')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/><line x1="20" y1="14" x2="20" y2="20"/><line x1="14" y1="20" x2="20" y2="20"/></svg>
         QR
       </button>
-      ${d.estado === 'activo' ? `<button class="btn btn-primary" onclick="Decas.generarPDF('${d.id}')">
+      <button class="btn btn-primary" onclick="Decas.generarPDF('${d.id}')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         PDF
-      </button>` : ''}
+      </button>
     `);
   },
 
@@ -357,16 +364,123 @@ const Decas = {
       </button>
     `);
 
-    document.getElementById('deca-form-submit').addEventListener('click', () => this.crearDeca());
+    document.getElementById('deca-form-submit').addEventListener('click', () => this.previsualizarDeca());
   },
 
-  // ====== CREAR DECA ======
-  async crearDeca() {
+  // ====== PREVISUALIZAR ANTES DE CREAR ======
+  previsualizarDeca() {
     const form = document.getElementById('deca-form');
     if (!form.reportValidity()) return;
 
-    const btn = document.getElementById('deca-form-submit');
-    const errorEl = document.getElementById('deca-form-error');
+    // Recoger datos del formulario
+    const conductorSelect = document.getElementById('deca-conductor');
+    const vehiculoSelect = document.getElementById('deca-vehiculo');
+    const remolqueSelect = document.getElementById('deca-remolque');
+
+    const conductorOption = conductorSelect.selectedOptions[0];
+    const vehiculoOption = vehiculoSelect.selectedOptions[0];
+    const remolqueOption = remolqueSelect.selectedOptions[0];
+
+    const fecha = document.getElementById('deca-fecha').value;
+    const fechaFormateada = fecha
+      ? new Date(fecha + 'T00:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
+      : '—';
+
+    // Guardar datos temporalmente para la confirmación
+    this._pendingRecord = {
+      fecha_transporte: fecha,
+      num_expedicion: document.getElementById('deca-expedicion').value.trim() || null,
+      origen: document.getElementById('deca-origen').value.trim(),
+      destino: document.getElementById('deca-destino').value.trim(),
+      descripcion_mercancia: document.getElementById('deca-mercancia').value.trim(),
+      peso: document.getElementById('deca-peso').value ? parseFloat(document.getElementById('deca-peso').value) : null,
+      bultos: document.getElementById('deca-bultos').value ? parseInt(document.getElementById('deca-bultos').value) : null,
+      vehiculo_id: vehiculoSelect.value,
+      matricula_vehiculo: vehiculoOption?.dataset.matricula || '',
+      remolque_id: remolqueSelect.value || null,
+      matricula_remolque: remolqueOption?.dataset.matricula || null,
+      conductor_id: conductorSelect.value,
+      nombre_conductor: conductorOption?.dataset.nombre || '',
+      dni_conductor: conductorOption?.dataset.dni || '',
+    };
+
+    const r = this._pendingRecord;
+
+    // Mostrar resumen para confirmar
+    showModal('Confirmar DeCA', `
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <p style="font-size:13px; color:var(--gray-500); margin-bottom:4px;">Revisa los datos antes de crear la DeCA:</p>
+
+        <div style="background:var(--gray-50); border-radius:10px; padding:14px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <div>
+            <span style="font-size:11px; color:var(--gray-500);">Fecha</span>
+            <p style="font-size:13px; font-weight:600;">${fechaFormateada}</p>
+          </div>
+          <div>
+            <span style="font-size:11px; color:var(--gray-500);">N.º expedición</span>
+            <p style="font-size:13px; font-weight:500;">${r.num_expedicion || '—'}</p>
+          </div>
+          <div>
+            <span style="font-size:11px; color:var(--gray-500);">Origen</span>
+            <p style="font-size:13px; font-weight:600;">${r.origen}</p>
+          </div>
+          <div>
+            <span style="font-size:11px; color:var(--gray-500);">Destino</span>
+            <p style="font-size:13px; font-weight:600;">${r.destino}</p>
+          </div>
+          <div style="grid-column:1/-1;">
+            <span style="font-size:11px; color:var(--gray-500);">Mercancía</span>
+            <p style="font-size:13px; font-weight:500;">${r.descripcion_mercancia}</p>
+          </div>
+          <div>
+            <span style="font-size:11px; color:var(--gray-500);">Peso</span>
+            <p style="font-size:13px; font-weight:500;">${r.peso ? Number(r.peso).toLocaleString('es-ES') + ' kg' : '—'}</p>
+          </div>
+          <div>
+            <span style="font-size:11px; color:var(--gray-500);">Bultos</span>
+            <p style="font-size:13px; font-weight:500;">${r.bultos || '—'}</p>
+          </div>
+        </div>
+
+        <div style="background:var(--gray-50); border-radius:10px; padding:14px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <div>
+            <span style="font-size:11px; color:var(--gray-500);">Conductor</span>
+            <p style="font-size:13px; font-weight:500;">${r.nombre_conductor}</p>
+          </div>
+          <div>
+            <span style="font-size:11px; color:var(--gray-500);">DNI</span>
+            <p style="font-size:13px; font-weight:500;">${r.dni_conductor || '—'}</p>
+          </div>
+          <div>
+            <span style="font-size:11px; color:var(--gray-500);">Vehículo</span>
+            <p style="font-size:13px; font-weight:500;">${r.matricula_vehiculo}</p>
+          </div>
+          <div>
+            <span style="font-size:11px; color:var(--gray-500);">Remolque</span>
+            <p style="font-size:13px; font-weight:500;">${r.matricula_remolque || 'Sin remolque'}</p>
+          </div>
+        </div>
+
+        <div id="deca-confirm-error" class="error-msg" hidden></div>
+      </div>
+    `, `
+      <button class="btn btn-secondary" onclick="Decas.showForm()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        Volver
+      </button>
+      <button class="btn btn-primary" id="deca-confirm-btn">
+        <span class="btn-text">Confirmar y crear</span>
+        <span class="btn-spinner" hidden></span>
+      </button>
+    `);
+
+    document.getElementById('deca-confirm-btn').addEventListener('click', () => this.crearDeca());
+  },
+
+  // ====== CREAR DECA (después de confirmar) ======
+  async crearDeca() {
+    const btn = document.getElementById('deca-confirm-btn');
+    const errorEl = document.getElementById('deca-confirm-error');
     errorEl.hidden = true;
 
     btn.disabled = true;
@@ -374,39 +488,15 @@ const Decas = {
     btn.querySelector('.btn-spinner').hidden = false;
 
     try {
-      // Obtener datos del formulario
-      const conductorSelect = document.getElementById('deca-conductor');
-      const vehiculoSelect = document.getElementById('deca-vehiculo');
-      const remolqueSelect = document.getElementById('deca-remolque');
-
-      const conductorOption = conductorSelect.selectedOptions[0];
-      const vehiculoOption = vehiculoSelect.selectedOptions[0];
-      const remolqueOption = remolqueSelect.selectedOptions[0];
-
-      // Generar referencia única: DECA-YYYYMMDD-XXXX
+      const r = this._pendingRecord;
       const referencia = this.generarReferencia();
-
-      // URL pública para el QR (apunta a la app con la referencia)
       const qrUrl = `https://deca-manager.netlify.app/deca.html?ref=${referencia}`;
 
       const record = {
         referencia,
         version: 1,
         estado: 'activo',
-        fecha_transporte: document.getElementById('deca-fecha').value,
-        num_expedicion: document.getElementById('deca-expedicion').value.trim() || null,
-        origen: document.getElementById('deca-origen').value.trim(),
-        destino: document.getElementById('deca-destino').value.trim(),
-        descripcion_mercancia: document.getElementById('deca-mercancia').value.trim(),
-        peso: document.getElementById('deca-peso').value ? parseFloat(document.getElementById('deca-peso').value) : null,
-        bultos: document.getElementById('deca-bultos').value ? parseInt(document.getElementById('deca-bultos').value) : null,
-        vehiculo_id: vehiculoSelect.value,
-        matricula_vehiculo: vehiculoOption?.dataset.matricula || '',
-        remolque_id: remolqueSelect.value || null,
-        matricula_remolque: remolqueOption?.dataset.matricula || null,
-        conductor_id: conductorSelect.value,
-        nombre_conductor: conductorOption?.dataset.nombre || '',
-        dni_conductor: conductorOption?.dataset.dni || '',
+        ...r,
         empresa: this.EMPRESA.nombre,
         nif_empresa: this.EMPRESA.nif || null,
         num_autorizacion: this.EMPRESA.num_autorizacion || null,
@@ -415,16 +505,14 @@ const Decas = {
       };
 
       const { data, error } = await supabase.from('decas').insert(record).select().single();
-
       if (error) throw new Error(error.message);
 
       closeModal();
       showToast(`DeCA ${referencia} creada`);
+      this._pendingRecord = null;
 
-      // Recargar la lista completa para asegurar datos frescos
       await this.loadDecas();
 
-      // Mostrar detalle de la DeCA recién creada (con botones PDF y QR)
       if (data) {
         this.showDetail(data);
       }
@@ -434,7 +522,7 @@ const Decas = {
       errorEl.hidden = false;
     } finally {
       btn.disabled = false;
-      btn.querySelector('.btn-text').textContent = 'Crear DeCA';
+      btn.querySelector('.btn-text').textContent = 'Confirmar y crear';
       btn.querySelector('.btn-spinner').hidden = true;
     }
   },
@@ -519,6 +607,34 @@ const Decas = {
     // Cerrar
     document.getElementById('qr-close-btn').addEventListener('click', () => {
       overlay.remove();
+    });
+  },
+
+  // ====== CAMBIAR ESTADO (finalizar / anular) ======
+  async cambiarEstado(decaId, nuevoEstado) {
+    const labels = { finalizado: 'finalizar', anulado: 'anular' };
+    const label = labels[nuevoEstado] || nuevoEstado;
+
+    confirmAction(`¿Seguro que quieres ${label} esta DeCA? Esta acción no se puede deshacer.`, async () => {
+      try {
+        const updates = { estado: nuevoEstado };
+        if (nuevoEstado === 'finalizado') {
+          updates.fecha_fin_servicio = new Date().toISOString();
+        }
+
+        const { error } = await supabase
+          .from('decas')
+          .update(updates)
+          .eq('id', decaId);
+
+        if (error) throw new Error(error.message);
+
+        showToast(`DeCA ${nuevoEstado === 'finalizado' ? 'finalizada' : 'anulada'}`);
+        closeModal();
+        await this.loadDecas();
+      } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+      }
     });
   },
 
