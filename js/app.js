@@ -215,48 +215,37 @@ const App = {
   },
 
   async loadDashboardStats(isAdmin) {
+    console.log('[DASH] Inicio loadDashboardStats');
     try {
-      // Usar fetch directo a la API REST de Supabase (evita bloqueos del SDK)
-      const token = (await supabase.auth.getSession())?.data?.session?.access_token;
-      const headers = {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': 'Bearer ' + (token || SUPABASE_ANON_KEY),
-        'Content-Type': 'application/json',
-        'Prefer': 'count=exact'
-      };
-      const base = SUPABASE_URL + '/rest/v1';
-
-      const fetchRows = async (table, query) => {
-        const res = await fetch(base + '/' + table + '?select=*&' + query, { headers });
-        const total = parseInt(res.headers.get('content-range')?.split('/')[1] || '0', 10);
-        const data = await res.json();
-        return { data, count: total };
-      };
-
-      const fetchCount = async (table, query) => {
-        const h = { ...headers, 'Prefer': 'count=exact', 'Range-Unit': 'items', 'Range': '0-0' };
-        const res = await fetch(base + '/' + table + '?select=id&' + query, { headers: h });
-        return parseInt(res.headers.get('content-range')?.split('/')[1] || '0', 10);
-      };
+      // Recrear cliente Supabase para evitar conexiones bloqueadas
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
       if (isAdmin) {
-        // Una sola petición para todas las decas
-        const res = await fetch(base + '/decas?select=id,estado,created_at,referencia,origen,destino,fecha_transporte,matricula_vehiculo,nombre_conductor,version&order=created_at.desc', { headers });
-        const allDecas = await res.json();
+        console.log('[DASH] Query decas...');
+        const { data: decas, error: decasErr } = await supabase
+          .from('decas')
+          .select('id, estado, created_at, referencia, origen, destino, fecha_transporte, matricula_vehiculo, nombre_conductor, version')
+          .order('created_at', { ascending: false });
 
+        console.log('[DASH] Decas recibidas:', decas?.length, 'error:', decasErr?.message);
+        const allDecas = decas || [];
         const activas = allDecas.filter(d => d.estado === 'activo').length;
         const finalizadas = allDecas.filter(d => d.estado === 'finalizado').length;
         const ultimas = allDecas.slice(0, 5);
 
-        const conductoresCount = await fetchCount('profiles', 'activo=eq.true');
-        const vehiculosCount = await fetchCount('vehiculos', 'activo=eq.true');
+        console.log('[DASH] Query profiles...');
+        const { count: conductoresCount } = await supabase
+          .from('profiles').select('id', { count: 'exact', head: true }).eq('activo', true);
+        console.log('[DASH] Query vehiculos...');
+        const { count: vehiculosCount } = await supabase
+          .from('vehiculos').select('id', { count: 'exact', head: true }).eq('activo', true);
 
         const el = document.getElementById('stat-activas');
         if (!el) return;
         el.textContent = activas;
         document.getElementById('stat-finalizadas').textContent = finalizadas;
-        document.getElementById('stat-conductores').textContent = conductoresCount;
-        document.getElementById('stat-vehiculos').textContent = vehiculosCount;
+        document.getElementById('stat-conductores').textContent = conductoresCount || 0;
+        document.getElementById('stat-vehiculos').textContent = vehiculosCount || 0;
         this.renderUltimasDeCA(ultimas);
 
       } else {
@@ -264,9 +253,13 @@ const App = {
         const now = new Date();
         const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
 
-        const res = await fetch(base + '/decas?select=id,estado,fecha_transporte,created_at,referencia,origen,destino,matricula_vehiculo,nombre_conductor,version&conductor_id=eq.' + pid + '&order=created_at.desc', { headers });
-        const allDecas = await res.json();
+        const { data: decas } = await supabase
+          .from('decas')
+          .select('id, estado, fecha_transporte, created_at, referencia, origen, destino, matricula_vehiculo, nombre_conductor, version')
+          .eq('conductor_id', pid)
+          .order('created_at', { ascending: false });
 
+        const allDecas = decas || [];
         const activas = allDecas.filter(d => d.estado === 'activo').length;
         const finalizadas = allDecas.filter(d => d.estado === 'finalizado').length;
         const mes = allDecas.filter(d => d.fecha_transporte && d.fecha_transporte >= firstOfMonth).length;
@@ -281,8 +274,10 @@ const App = {
         document.getElementById('stat-modificadas').textContent = modificadas;
         this.renderUltimasDeCA(ultimas);
       }
+      console.log('[DASH] Stats renderizadas OK');
     } catch (err) {
-      console.warn('Error cargando stats:', err);
+      console.warn('[DASH] Error cargando stats:', err);
+      // No bloquear — el dashboard se muestra con lo que haya
     }
   },
 
