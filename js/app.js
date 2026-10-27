@@ -27,9 +27,14 @@ const App = {
     document.getElementById('login-error').hidden = true;
   },
 
-  showApp() {
+  async showApp() {
     document.getElementById('login-screen').classList.remove('active');
     document.getElementById('app-screen').classList.add('active');
+    // Cachear token al iniciar para que el dashboard no dependa del SDK
+    try {
+      const s = await supabase.auth.getSession();
+      this._authToken = s?.data?.session?.access_token || SUPABASE_ANON_KEY;
+    } catch(e) { this._authToken = SUPABASE_ANON_KEY; }
     this.updateHeader();
     this.buildBottomNav();
     this.navigate('dashboard');
@@ -217,9 +222,14 @@ const App = {
   async loadDashboardStats(isAdmin) {
     console.log('[DASH] Inicio loadDashboardStats');
     try {
-      // Usar fetch directo con timeout (el SDK se bloquea en visitas sucesivas)
-      const session = await supabase.auth.getSession();
-      const token = session?.data?.session?.access_token || SUPABASE_ANON_KEY;
+      // Token cacheado para no depender del SDK (se bloquea en visitas sucesivas)
+      if (!this._authToken) {
+        try {
+          const s = await supabase.auth.getSession();
+          this._authToken = s?.data?.session?.access_token || SUPABASE_ANON_KEY;
+        } catch(e) { this._authToken = SUPABASE_ANON_KEY; }
+      }
+      const token = this._authToken;
       const base = SUPABASE_URL + '/rest/v1';
 
       const dashFetch = async (url) => {
