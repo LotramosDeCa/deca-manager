@@ -86,7 +86,8 @@ const App = {
   _navId: 0, // Protección contra navegaciones simultáneas
 
   async navigate(view) {
-    const navId = ++this._navId; // Cada navegación tiene un ID único
+    const navId = ++this._navId;
+    console.log('[NAV] →', view, 'navId:', navId);
     this.currentView = view;
     const content = document.getElementById('main-content');
     const title = document.getElementById('header-title');
