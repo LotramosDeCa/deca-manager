@@ -56,17 +56,14 @@ const Decas = {
   async loadDecas() {
     console.log('[DeCA] loadDecas iniciando...');
     try {
-      let query = supabase
-        .from('decas')
-        .select('*')
-        .order('created_at', { ascending: false });
+      let params = 'select=*&order=created_at.desc';
 
       // Conductores solo ven las suyas
       if (!Auth.isAdmin()) {
-        query = query.eq('conductor_id', Auth.currentProfile.id);
+        params += '&conductor_id=eq.' + Auth.currentProfile.id;
       }
 
-      const { data, error } = await query;
+      const { data, error } = await sbSelect('decas', params);
 
       if (error) {
         showToast('Error cargando DeCA', 'error');
