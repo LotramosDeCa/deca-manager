@@ -223,7 +223,9 @@ const App = {
           supabase.from('decas').select('*').order('created_at', { ascending: false }).limit(5),
         ]);
 
-        document.getElementById('stat-activas').textContent = activas.count || 0;
+        const elActivas = document.getElementById('stat-activas');
+        if (!elActivas) return; // Vista ya cambió
+        elActivas.textContent = activas.count || 0;
         document.getElementById('stat-finalizadas').textContent = finalizadas.count || 0;
         document.getElementById('stat-conductores').textContent = conductores.count || 0;
         document.getElementById('stat-vehiculos').textContent = vehiculos.count || 0;
@@ -242,7 +244,9 @@ const App = {
           supabase.from('decas').select('*').eq('conductor_id', pid).order('created_at', { ascending: false }).limit(5),
         ]);
 
-        document.getElementById('stat-activas').textContent = activas.count || 0;
+        const elActivas2 = document.getElementById('stat-activas');
+        if (!elActivas2) return; // Vista ya cambió
+        elActivas2.textContent = activas.count || 0;
         document.getElementById('stat-finalizadas').textContent = finalizadas.count || 0;
         document.getElementById('stat-mes').textContent = mes.count || 0;
         document.getElementById('stat-modificadas').textContent = modificadas.count || 0;
