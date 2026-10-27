@@ -67,10 +67,7 @@ const Flota = {
 
   // ====== CARGAR DATOS ======
   async loadVehiculos() {
-    const { data, error } = await supabase
-      .from('vehiculos')
-      .select('*')
-      .order('matricula', { ascending: true });
+    const { data, error } = await sbSelect('vehiculos', 'select=*&order=matricula.asc');
 
     if (error) {
       showToast('Error cargando vehículos', 'error');
@@ -82,10 +79,7 @@ const Flota = {
   },
 
   async loadRemolques() {
-    const { data, error } = await supabase
-      .from('remolques')
-      .select('*')
-      .order('matricula', { ascending: true });
+    const { data, error } = await sbSelect('remolques', 'select=*&order=matricula.asc');
 
     if (error) {
       showToast('Error cargando remolques', 'error');
