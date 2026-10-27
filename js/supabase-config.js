@@ -38,6 +38,46 @@ const SUPABASE_OPTIONS = {
   }
 };
 
+// ------------------------------------------------------------
+// sbSelect — lectura directa a la API REST, sin pasar por el SDK
+// ------------------------------------------------------------
+// El SDK se queda colgado en las lecturas tras varias navegaciones
+// (la promesa nunca se resuelve: ni dato, ni error, ni timeout).
+// Esta función hace la misma consulta con fetch y devuelve el mismo
+// formato { data, error }, así que es un reemplazo directo.
+let SB_TOKEN = null;
+
+function sbToken() {
+  if (SB_TOKEN) return SB_TOKEN;
+  try {
+    const raw = localStorage.getItem('sb-dzotgifxgjfvpprjffow-auth-token');
+    if (raw) SB_TOKEN = JSON.parse(raw).access_token;
+  } catch (e) { /* storage bloqueado */ }
+  return SB_TOKEN || SUPABASE_ANON_KEY;
+}
+
+async function sbSelect(table, params) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/' + table + '?' + params, {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + sbToken()
+      },
+      signal: controller.signal
+    });
+    clearTimeout(timer);
+    if (!res.ok) {
+      return { data: null, error: { message: (await res.text()) || ('HTTP ' + res.status) } };
+    }
+    return { data: await res.json(), error: null };
+  } catch (e) {
+    clearTimeout(timer);
+    return { data: null, error: { message: e.name === 'AbortError' ? 'Tiempo de espera agotado' : e.message } };
+  }
+}
+
 async function initSupabase() {
   if (typeof window.supabase !== 'undefined') {
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_OPTIONS);
