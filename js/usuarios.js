@@ -33,11 +33,7 @@ const Usuarios = {
 
   // Cargar lista de usuarios
   async loadUsers() {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('rol', { ascending: true })
-      .order('nombre', { ascending: true });
+    const { data, error } = await sbSelect('profiles', 'select=*&order=rol.asc,nombre.asc');
 
     if (error) {
       showToast('Error cargando usuarios', 'error');
