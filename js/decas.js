@@ -54,25 +54,32 @@ const Decas = {
 
   // ====== CARGAR LISTA ======
   async loadDecas() {
-    let query = supabase
-      .from('decas')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      let query = supabase
+        .from('decas')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    // Conductores solo ven las suyas
-    if (!Auth.isAdmin()) {
-      query = query.eq('conductor_id', Auth.currentProfile.id);
+      // Conductores solo ven las suyas
+      if (!Auth.isAdmin()) {
+        query = query.eq('conductor_id', Auth.currentProfile.id);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        showToast('Error cargando DeCA', 'error');
+        console.error('loadDecas error:', error);
+      }
+
+      this.list = data || [];
+    } catch (err) {
+      console.error('loadDecas exception:', err);
+      showToast('Error de conexión', 'error');
+      this.list = [];
     }
 
-    const { data, error } = await query;
-
-    if (error) {
-      showToast('Error cargando DeCA', 'error');
-      console.error(error);
-      return;
-    }
-
-    this.list = data || [];
+    // SIEMPRE renderizar, incluso si la lista está vacía por error
     this.renderList();
   },
 
@@ -413,14 +420,14 @@ const Decas = {
 
       closeModal();
       showToast(`DeCA ${referencia} creada`);
+
+      // Recargar la lista completa para asegurar datos frescos
       await this.loadDecas();
 
-      // Preguntar si quiere generar el PDF
-      setTimeout(() => {
-        if (data?.id) {
-          confirmAction('¿Quieres generar el PDF de esta DeCA?', () => this.generarPDF(data.id));
-        }
-      }, 500);
+      // Mostrar detalle de la DeCA recién creada (con botones PDF y QR)
+      if (data) {
+        this.showDetail(data);
+      }
 
     } catch (err) {
       errorEl.textContent = err.message;
