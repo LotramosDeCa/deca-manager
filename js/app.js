@@ -130,7 +130,6 @@ const App = {
           await this.renderDashboard(content);
       }
     } catch (err) {
-      // Solo mostrar error si ESTA navegación sigue siendo la activa
       if (navId !== this._navId) return;
       console.error('Error navegando a', view, err);
       content.innerHTML = `
@@ -141,6 +140,9 @@ const App = {
         </div>
       `;
     }
+
+    // Si otra navegación empezó mientras esta cargaba, no tocar nada
+    if (navId !== this._navId) return;
   },
 
   // Navegar a sub-vista con botón volver
@@ -426,6 +428,9 @@ function showModal(title, bodyHTML, footerHTML = '') {
 
 function closeModal() {
   document.getElementById('modal-overlay').hidden = true;
+  // También cerrar el overlay QR a pantalla completa si existe
+  const qrOverlay = document.getElementById('qr-fullscreen');
+  if (qrOverlay) qrOverlay.remove();
 }
 
 // Cerrar modal con click en overlay o botón X
