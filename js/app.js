@@ -272,7 +272,7 @@ const App = {
 
     container.innerHTML = decas.map(d => {
       const estadoClass = {
-        activo: 'badge-activo', finalizado: 'badge-success', modificado: 'badge-warning', anulado: 'badge-inactivo',
+        activo: 'badge-info', finalizado: 'badge-success', modificado: 'badge-warning', anulado: 'badge-danger',
       }[d.estado] || 'badge-info';
       const estadoLabel = {
         activo: 'Activa', finalizado: 'Finalizada', modificado: 'Modificada', anulado: 'Anulada',
