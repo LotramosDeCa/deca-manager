@@ -514,19 +514,30 @@ const Decas = {
       showToast(`DeCA ${referencia} creada`);
       this._pendingRecord = null;
 
-      await this.loadDecas();
+      // Recargar lista en background (no bloqueante)
+      this.loadDecas().catch(() => {});
 
+      // Mostrar detalle de la DeCA recién creada
       if (data) {
         this.showDetail(data);
       }
 
     } catch (err) {
-      errorEl.textContent = err.message;
-      errorEl.hidden = false;
+      // Solo mostrar error si el modal sigue visible
+      if (errorEl && !document.getElementById('modal-overlay')?.hidden) {
+        errorEl.textContent = err.message;
+        errorEl.hidden = false;
+      } else {
+        showToast(err.message || 'Error al crear DeCA', 'error');
+      }
     } finally {
-      btn.disabled = false;
-      btn.querySelector('.btn-text').textContent = 'Confirmar y crear';
-      btn.querySelector('.btn-spinner').hidden = true;
+      if (btn && btn.isConnected) {
+        btn.disabled = false;
+        const txt = btn.querySelector('.btn-text');
+        const sp = btn.querySelector('.btn-spinner');
+        if (txt) txt.textContent = 'Confirmar y crear';
+        if (sp) sp.hidden = true;
+      }
     }
   },
 
