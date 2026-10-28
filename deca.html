@@ -368,14 +368,83 @@
         } catch (e) { console.warn('QR error:', e); }
       }
 
+      // ========== DATOS CORREGIDOS (si version > 1) ==========
+      if (d.version && d.version > 1) {
+        try {
+          const histRes = await fetch(
+            SUPABASE_URL + '/rest/v1/deca_historial?select=*&deca_id=eq.' + d.id + '&order=version.asc,created_at.asc',
+            { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY } }
+          );
+          const registros = histRes.ok ? await histRes.json() : [];
+
+          if (registros.length > 0) {
+            var campoLabel = {
+              nombre_cargador: 'Cargador', nif_cargador: 'NIF Cargador',
+              direccion_cargador: 'Dir. Cargador', nombre_destinatario: 'Destinatario',
+              nif_destinatario: 'NIF Destinatario', direccion_destinatario: 'Dir. Destinatario',
+              fecha_transporte: 'Fecha transporte', hora_carga: 'Hora carga',
+              origen: 'Lugar de carga', destino: 'Lugar de descarga',
+              descripcion_mercancia: 'Mercancia', peso: 'Peso (kg)', bultos: 'Bultos',
+              nombre_conductor: 'Conductor', dni_conductor: 'DNI Conductor',
+              matricula_vehiculo: 'Vehiculo', matricula_remolque: 'Remolque',
+            };
+
+            y += 46;
+            if (y > 240) { doc.addPage(); y = 20; }
+
+            doc.setFillColor(220, 120, 20);
+            doc.rect(m, y, cw, 7, 'F');
+            doc.setTextColor(...WHITE);
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            doc.text('DATOS CORREGIDOS', m + 3, y + 5);
+            y += 10;
+
+            doc.setFillColor(245, 245, 245);
+            doc.rect(m, y - 1, cw, 6, 'F');
+            doc.setTextColor(...DARK);
+            doc.setFontSize(7);
+            doc.setFont('helvetica', 'bold');
+            doc.text('V.', m + 2, y + 3);
+            doc.text('Campo', m + 12, y + 3);
+            doc.text('Valor anterior', m + 55, y + 3);
+            doc.text('Valor nuevo', m + 120, y + 3);
+            doc.setFont('helvetica', 'normal');
+            y += 7;
+
+            for (var hi = 0; hi < registros.length; hi++) {
+              var h = registros[hi];
+              if (h.campo && h.campo.endsWith('_id')) continue;
+              if (y > 272) { doc.addPage(); y = 20; }
+
+              doc.setDrawColor(230, 230, 230);
+              doc.line(m, y - 1, pw - m, y - 1);
+              doc.setFontSize(7);
+              doc.setTextColor(...DARK);
+              doc.text(String(h.version), m + 2, y + 3);
+              doc.text(campoLabel[h.campo] || h.campo, m + 12, y + 3);
+              doc.setTextColor(180, 60, 60);
+              doc.text(String(h.valor_anterior || '(vacio)'), m + 55, y + 3, { maxWidth: 60 });
+              doc.setTextColor(20, 130, 80);
+              doc.text(String(h.valor_nuevo || '(vacio)'), m + 120, y + 3, { maxWidth: 60 });
+              y += 6;
+            }
+          }
+        } catch (histErr) { console.warn('Historial error:', histErr); }
+      }
+
       // ========== PIE ==========
-      const footerY = 282;
-      doc.setDrawColor(200, 200, 200);
-      doc.line(m, footerY, pw - m, footerY);
-      doc.setFontSize(7);
-      doc.setTextColor(150, 150, 150);
-      doc.text('Generado por DeCA Manager -- ' + new Date().toLocaleString('es-ES'), m, footerY + 4);
-      doc.text('Ref: ' + d.referencia + ' | Conforme a Orden TRM/282/2026', pw - m, footerY + 4, { align: 'right' });
+      var totalPages = doc.internal.getNumberOfPages();
+      for (var p = 1; p <= totalPages; p++) {
+        doc.setPage(p);
+        var footerY = 282;
+        doc.setDrawColor(200, 200, 200);
+        doc.line(m, footerY, pw - m, footerY);
+        doc.setFontSize(7);
+        doc.setTextColor(150, 150, 150);
+        doc.text('Generado por DeCA Manager -- ' + new Date().toLocaleString('es-ES'), m, footerY + 4);
+        doc.text('Ref: ' + d.referencia + ' | Pag. ' + p + '/' + totalPages + ' | Conforme a Orden TRM/282/2026', pw - m, footerY + 4, { align: 'right' });
+      }
 
       // ========== DESCARGAR ==========
       doc.save((d.referencia || 'DeCA') + '.pdf');
