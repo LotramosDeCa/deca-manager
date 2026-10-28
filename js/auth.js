@@ -18,9 +18,16 @@ const Auth = {
 
     // Escuchar cambios de estado de auth
     supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        await this.loadProfile(session.user, session.access_token);
-        App.showApp();
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
+        // Actualizar token silenciosamente
+        SB_TOKEN = session.access_token;
+        App._authToken = session.access_token;
+        // Solo cargar perfil y mostrar app si no estamos ya dentro
+        const appVisible = document.getElementById('app-screen')?.classList.contains('active');
+        if (!appVisible) {
+          await this.loadProfile(session.user, session.access_token);
+          App.showApp();
+        }
       } else if (event === 'SIGNED_OUT') {
         this.currentUser = null;
         this.currentProfile = null;
