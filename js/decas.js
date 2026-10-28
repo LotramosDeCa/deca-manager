@@ -9,9 +9,10 @@ const Decas = {
 
   // Datos de empresa (fijos para Lotramos)
   EMPRESA: {
-    nombre: 'Lotramos',
-    nif: '',              // Alberto rellenará su NIF
-    num_autorizacion: '', // N.º autorización transporte
+    nombre: 'Lotramos SL',
+    nif: 'B45849353',
+    direccion: 'AV. Principe, 82 - 45692 Malpica de Tajo',
+    num_autorizacion: '', // Alberto rellenará su nº autorización
   },
 
   // ====== RENDERIZAR VISTA PRINCIPAL ======
@@ -175,10 +176,10 @@ const Decas = {
     }[d.estado] || 'badge-info';
 
     showModal(d.referencia || 'DeCA', `
-      <div style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; flex-direction:column; gap:14px; max-height:60vh; overflow-y:auto;">
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
           <span class="badge ${estadoClass}">${estadoLabel}</span>
-          ${d.version > 1 ? `<span class="badge badge-info">Versión ${d.version}</span>` : ''}
+          ${d.version > 1 ? `<span class="badge badge-info">Version ${d.version}</span>` : ''}
         </div>
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
@@ -187,19 +188,49 @@ const Decas = {
             <p style="font-size:13px; font-weight:600;">${d.referencia || '—'}</p>
           </div>
           <div>
+            <span style="font-size:11px; color:var(--gray-500);">N. expedicion</span>
+            <p style="font-size:13px; font-weight:500;">${d.num_expedicion || '—'}</p>
+          </div>
+        </div>
+
+        ${(d.nombre_cargador || d.nombre_destinatario) ? `
+        <hr style="border:none; border-top:1px solid var(--gray-200); margin:2px 0;">
+        <p style="font-size:11px; color:var(--primary); font-weight:600; text-transform:uppercase; margin-bottom:-6px;">Partes intervinientes</p>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div>
+            <span style="font-size:11px; color:var(--gray-500);">Cargador</span>
+            <p style="font-size:13px; font-weight:500;">${d.nombre_cargador || '—'}</p>
+            <p style="font-size:11px; color:var(--gray-500);">${d.nif_cargador || ''}</p>
+          </div>
+          <div>
+            <span style="font-size:11px; color:var(--gray-500);">Destinatario</span>
+            <p style="font-size:13px; font-weight:500;">${d.nombre_destinatario || '—'}</p>
+            <p style="font-size:11px; color:var(--gray-500);">${d.nif_destinatario || ''}</p>
+          </div>
+        </div>
+        ` : ''}
+
+        <hr style="border:none; border-top:1px solid var(--gray-200); margin:2px 0;">
+        <p style="font-size:11px; color:var(--primary); font-weight:600; text-transform:uppercase; margin-bottom:-6px;">Envio</p>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div>
             <span style="font-size:11px; color:var(--gray-500);">Fecha transporte</span>
             <p style="font-size:13px; font-weight:500;">${fecha}</p>
           </div>
           <div>
-            <span style="font-size:11px; color:var(--gray-500);">Origen</span>
+            <span style="font-size:11px; color:var(--gray-500);">Hora carga</span>
+            <p style="font-size:13px; font-weight:500;">${d.hora_carga || '—'}</p>
+          </div>
+          <div>
+            <span style="font-size:11px; color:var(--gray-500);">Lugar de carga</span>
             <p style="font-size:13px; font-weight:500;">${d.origen || '—'}</p>
           </div>
           <div>
-            <span style="font-size:11px; color:var(--gray-500);">Destino</span>
+            <span style="font-size:11px; color:var(--gray-500);">Lugar de descarga</span>
             <p style="font-size:13px; font-weight:500;">${d.destino || '—'}</p>
           </div>
           <div style="grid-column:1/-1;">
-            <span style="font-size:11px; color:var(--gray-500);">Mercancía</span>
+            <span style="font-size:11px; color:var(--gray-500);">Mercancia</span>
             <p style="font-size:13px; font-weight:500;">${d.descripcion_mercancia || '—'}</p>
           </div>
           <div>
@@ -212,8 +243,8 @@ const Decas = {
           </div>
         </div>
 
-        <hr style="border:none; border-top:1px solid var(--gray-200); margin:4px 0;">
-
+        <hr style="border:none; border-top:1px solid var(--gray-200); margin:2px 0;">
+        <p style="font-size:11px; color:var(--primary); font-weight:600; text-transform:uppercase; margin-bottom:-6px;">Vehiculo y conductor</p>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
           <div>
             <span style="font-size:11px; color:var(--gray-500);">Conductor</span>
@@ -224,7 +255,7 @@ const Decas = {
             <p style="font-size:13px; font-weight:500;">${d.dni_conductor || '—'}</p>
           </div>
           <div>
-            <span style="font-size:11px; color:var(--gray-500);">Vehículo</span>
+            <span style="font-size:11px; color:var(--gray-500);">Vehiculo</span>
             <p style="font-size:13px; font-weight:500;">${d.matricula_vehiculo || '—'}</p>
           </div>
           <div>
@@ -236,7 +267,7 @@ const Decas = {
             <p style="font-size:13px; font-weight:500;">${d.empresa || '—'}</p>
           </div>
           <div>
-            <span style="font-size:11px; color:var(--gray-500);">NIF</span>
+            <span style="font-size:11px; color:var(--gray-500);">NIF empresa</span>
             <p style="font-size:13px; font-weight:500;">${d.nif_empresa || '—'}</p>
           </div>
         </div>
@@ -268,16 +299,18 @@ const Decas = {
   async showForm() {
     closeModal();
 
-    // Cargar vehículos y remolques activos + conductores
-    const [vehiculos, remolques, conductores] = await Promise.all([
+    // Cargar vehículos, remolques, conductores y clientes en paralelo
+    const [vehiculos, remolques, conductores, clientesRes] = await Promise.all([
       sbSelect('vehiculos', 'select=id,matricula,marca,modelo&activo=eq.true&order=matricula.asc'),
       sbSelect('remolques', 'select=id,matricula,marca,modelo&activo=eq.true&order=matricula.asc'),
       sbSelect('profiles', 'select=id,user_id,nombre,apellidos,dni&activo=eq.true&rol=eq.conductor&order=nombre.asc'),
+      sbSelect('clientes', 'select=id,nombre,nif,direccion,poblacion,codigo_postal,provincia&activo=eq.true&order=nombre.asc'),
     ]);
 
     this.vehiculosActivos = vehiculos.data || [];
     this.remolquesActivos = remolques.data || [];
     const conductoresActivos = conductores.data || [];
+    this._clientesActivos = clientesRes.data || [];
 
     // Incluir admins también como posibles conductores
     const admins = await sbSelect('profiles', 'select=id,user_id,nombre,apellidos,dni&activo=eq.true&rol=eq.admin&order=nombre.asc');
@@ -285,41 +318,67 @@ const Decas = {
 
     const hoy = new Date().toISOString().split('T')[0];
 
+    // Construir opciones de clientes con data-* para copiar datos al registro
+    const clienteOptions = this._clientesActivos.map(c => {
+      const dir = [c.direccion, c.poblacion, c.codigo_postal, c.provincia].filter(Boolean).join(', ');
+      return `<option value="${c.id}" data-nombre="${c.nombre}" data-nif="${c.nif || ''}" data-direccion="${dir}">${c.nombre}${c.nif ? ' (' + c.nif + ')' : ''}</option>`;
+    }).join('');
+
     const formHTML = `
       <form id="deca-form" style="display:flex; flex-direction:column; gap:4px; max-height:65vh; overflow-y:auto; padding-right:4px;">
 
-        <p style="font-size:12px; color:var(--gray-500); margin-bottom:4px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Datos del transporte</p>
+        <p style="font-size:12px; color:var(--gray-500); margin-bottom:4px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Partes intervinientes</p>
 
         <div class="form-group">
-          <label for="deca-fecha">Fecha de transporte *</label>
-          <input type="date" id="deca-fecha" required value="${hoy}">
+          <label for="deca-cargador">Cargador / Expedidor *</label>
+          <select id="deca-cargador" required>
+            <option value="">Seleccionar cargador</option>
+            ${clienteOptions}
+          </select>
         </div>
 
         <div class="form-group">
-          <label for="deca-expedicion">N.º expedición</label>
-          <input type="text" id="deca-expedicion" placeholder="Opcional">
+          <label for="deca-destinatario">Destinatario *</label>
+          <select id="deca-destinatario" required>
+            <option value="">Seleccionar destinatario</option>
+            ${clienteOptions}
+          </select>
+        </div>
+
+        <hr style="border:none; border-top:1px solid var(--gray-200); margin:8px 0;">
+        <p style="font-size:12px; color:var(--gray-500); margin-bottom:4px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Datos del envio</p>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="deca-fecha">Fecha de transporte *</label>
+            <input type="date" id="deca-fecha" required value="${hoy}">
+          </div>
+          <div class="form-group">
+            <label for="deca-hora-carga">Hora de carga</label>
+            <input type="time" id="deca-hora-carga">
+          </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label for="deca-origen">Origen *</label>
+            <label for="deca-origen">Lugar de carga *</label>
             <input type="text" id="deca-origen" required placeholder="Ciudad o dirección">
           </div>
           <div class="form-group">
-            <label for="deca-destino">Destino *</label>
+            <label for="deca-destino">Lugar de descarga *</label>
             <input type="text" id="deca-destino" required placeholder="Ciudad o dirección">
           </div>
         </div>
 
         <div class="form-group">
-          <label for="deca-mercancia">Descripción mercancía *</label>
+          <label for="deca-mercancia">Naturaleza de la mercancia *</label>
           <input type="text" id="deca-mercancia" required placeholder="Ej: Material de construcción">
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label for="deca-peso">Peso (kg)</label>
-            <input type="number" id="deca-peso" min="0" step="0.01" placeholder="0">
+            <label for="deca-peso">Peso (kg) *</label>
+            <input type="number" id="deca-peso" min="0" step="0.01" required placeholder="0">
           </div>
           <div class="form-group">
             <label for="deca-bultos">Bultos</label>
@@ -328,7 +387,7 @@ const Decas = {
         </div>
 
         <hr style="border:none; border-top:1px solid var(--gray-200); margin:8px 0;">
-        <p style="font-size:12px; color:var(--gray-500); margin-bottom:4px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Conductor y vehículo</p>
+        <p style="font-size:12px; color:var(--gray-500); margin-bottom:4px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Conductor y vehiculo</p>
 
         <div class="form-group">
           <label for="deca-conductor">Conductor *</label>
@@ -339,10 +398,10 @@ const Decas = {
         </div>
 
         <div class="form-group">
-          <label for="deca-vehiculo">Vehículo *</label>
+          <label for="deca-vehiculo">Vehiculo *</label>
           <select id="deca-vehiculo" required>
-            <option value="">Seleccionar vehículo</option>
-            ${this.vehiculosActivos.map(v => `<option value="${v.id}" data-matricula="${v.matricula}">${v.matricula}${v.marca ? ' — ' + v.marca : ''}${v.modelo ? ' ' + v.modelo : ''}</option>`).join('')}
+            <option value="">Seleccionar vehiculo</option>
+            ${this.vehiculosActivos.map(v => `<option value="${v.id}" data-matricula="${v.matricula}">${v.matricula}${v.marca ? ' -- ' + v.marca : ''}${v.modelo ? ' ' + v.modelo : ''}</option>`).join('')}
           </select>
         </div>
 
@@ -350,7 +409,7 @@ const Decas = {
           <label for="deca-remolque">Remolque</label>
           <select id="deca-remolque">
             <option value="">Sin remolque</option>
-            ${this.remolquesActivos.map(r => `<option value="${r.id}" data-matricula="${r.matricula}">${r.matricula}${r.marca ? ' — ' + r.marca : ''}${r.modelo ? ' ' + r.modelo : ''}</option>`).join('')}
+            ${this.remolquesActivos.map(r => `<option value="${r.id}" data-matricula="${r.matricula}">${r.matricula}${r.marca ? ' -- ' + r.marca : ''}${r.modelo ? ' ' + r.modelo : ''}</option>`).join('')}
           </select>
         </div>
 
@@ -375,15 +434,20 @@ const Decas = {
     if (!form.reportValidity()) return;
 
     // Recoger datos del formulario
+    const cargadorSelect = document.getElementById('deca-cargador');
+    const destinatarioSelect = document.getElementById('deca-destinatario');
     const conductorSelect = document.getElementById('deca-conductor');
     const vehiculoSelect = document.getElementById('deca-vehiculo');
     const remolqueSelect = document.getElementById('deca-remolque');
 
+    const cargadorOption = cargadorSelect.selectedOptions[0];
+    const destinatarioOption = destinatarioSelect.selectedOptions[0];
     const conductorOption = conductorSelect.selectedOptions[0];
     const vehiculoOption = vehiculoSelect.selectedOptions[0];
     const remolqueOption = remolqueSelect.selectedOptions[0];
 
     const fecha = document.getElementById('deca-fecha').value;
+    const horaCarga = document.getElementById('deca-hora-carga').value || null;
     const fechaFormateada = fecha
       ? new Date(fecha + 'T00:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
       : '—';
@@ -391,12 +455,23 @@ const Decas = {
     // Guardar datos temporalmente para la confirmación
     this._pendingRecord = {
       fecha_transporte: fecha,
-      num_expedicion: document.getElementById('deca-expedicion').value.trim() || null,
+      hora_carga: horaCarga,
       origen: document.getElementById('deca-origen').value.trim(),
       destino: document.getElementById('deca-destino').value.trim(),
       descripcion_mercancia: document.getElementById('deca-mercancia').value.trim(),
       peso: document.getElementById('deca-peso').value ? parseFloat(document.getElementById('deca-peso').value) : null,
       bultos: document.getElementById('deca-bultos').value ? parseInt(document.getElementById('deca-bultos').value) : null,
+      // Cargador
+      cargador_id: cargadorSelect.value,
+      nombre_cargador: cargadorOption?.dataset.nombre || '',
+      nif_cargador: cargadorOption?.dataset.nif || '',
+      direccion_cargador: cargadorOption?.dataset.direccion || '',
+      // Destinatario
+      destinatario_id: destinatarioSelect.value,
+      nombre_destinatario: destinatarioOption?.dataset.nombre || '',
+      nif_destinatario: destinatarioOption?.dataset.nif || '',
+      direccion_destinatario: destinatarioOption?.dataset.direccion || '',
+      // Vehiculo y conductor
       vehiculo_id: vehiculoSelect.value,
       matricula_vehiculo: vehiculoOption?.dataset.matricula || '',
       remolque_id: remolqueSelect.value || null,
@@ -414,24 +489,39 @@ const Decas = {
         <p style="font-size:13px; color:var(--gray-500); margin-bottom:4px;">Revisa los datos antes de crear la DeCA:</p>
 
         <div style="background:var(--gray-50); border-radius:10px; padding:14px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <p style="font-size:11px; color:var(--primary); font-weight:600; text-transform:uppercase; grid-column:1/-1; margin-bottom:2px;">Partes intervinientes</p>
+          <div>
+            <span style="font-size:11px; color:var(--gray-500);">Cargador</span>
+            <p style="font-size:13px; font-weight:600;">${r.nombre_cargador}</p>
+            <p style="font-size:11px; color:var(--gray-500);">${r.nif_cargador || ''}</p>
+          </div>
+          <div>
+            <span style="font-size:11px; color:var(--gray-500);">Destinatario</span>
+            <p style="font-size:13px; font-weight:600;">${r.nombre_destinatario}</p>
+            <p style="font-size:11px; color:var(--gray-500);">${r.nif_destinatario || ''}</p>
+          </div>
+        </div>
+
+        <div style="background:var(--gray-50); border-radius:10px; padding:14px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <p style="font-size:11px; color:var(--primary); font-weight:600; text-transform:uppercase; grid-column:1/-1; margin-bottom:2px;">Envio</p>
           <div>
             <span style="font-size:11px; color:var(--gray-500);">Fecha</span>
             <p style="font-size:13px; font-weight:600;">${fechaFormateada}</p>
           </div>
           <div>
-            <span style="font-size:11px; color:var(--gray-500);">N.º expedición</span>
-            <p style="font-size:13px; font-weight:500;">${r.num_expedicion || '—'}</p>
+            <span style="font-size:11px; color:var(--gray-500);">Hora carga</span>
+            <p style="font-size:13px; font-weight:500;">${r.hora_carga || '—'}</p>
           </div>
           <div>
-            <span style="font-size:11px; color:var(--gray-500);">Origen</span>
+            <span style="font-size:11px; color:var(--gray-500);">Lugar de carga</span>
             <p style="font-size:13px; font-weight:600;">${r.origen}</p>
           </div>
           <div>
-            <span style="font-size:11px; color:var(--gray-500);">Destino</span>
+            <span style="font-size:11px; color:var(--gray-500);">Lugar de descarga</span>
             <p style="font-size:13px; font-weight:600;">${r.destino}</p>
           </div>
           <div style="grid-column:1/-1;">
-            <span style="font-size:11px; color:var(--gray-500);">Mercancía</span>
+            <span style="font-size:11px; color:var(--gray-500);">Mercancia</span>
             <p style="font-size:13px; font-weight:500;">${r.descripcion_mercancia}</p>
           </div>
           <div>
@@ -445,6 +535,7 @@ const Decas = {
         </div>
 
         <div style="background:var(--gray-50); border-radius:10px; padding:14px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <p style="font-size:11px; color:var(--primary); font-weight:600; text-transform:uppercase; grid-column:1/-1; margin-bottom:2px;">Vehiculo y conductor</p>
           <div>
             <span style="font-size:11px; color:var(--gray-500);">Conductor</span>
             <p style="font-size:13px; font-weight:500;">${r.nombre_conductor}</p>
@@ -454,7 +545,7 @@ const Decas = {
             <p style="font-size:13px; font-weight:500;">${r.dni_conductor || '—'}</p>
           </div>
           <div>
-            <span style="font-size:11px; color:var(--gray-500);">Vehículo</span>
+            <span style="font-size:11px; color:var(--gray-500);">Vehiculo</span>
             <p style="font-size:13px; font-weight:500;">${r.matricula_vehiculo}</p>
           </div>
           <div>
@@ -496,17 +587,32 @@ const Decas = {
       const referencia = this.generarReferencia();
       const qrUrl = `https://deca-manager.netlify.app/deca.html?ref=${referencia}`;
 
+      // Auto-generar num_expedicion = referencia
+      const numExpedicion = referencia;
+
       const record = {
         referencia,
         version: 1,
         estado: 'activo',
         fecha_transporte: r.fecha_transporte,
-        num_expedicion: r.num_expedicion,
+        hora_carga: r.hora_carga,
+        num_expedicion: numExpedicion,
         origen: r.origen,
         destino: r.destino,
         descripcion_mercancia: r.descripcion_mercancia,
         peso: r.peso,
         bultos: r.bultos,
+        // Cargador
+        cargador_id: r.cargador_id,
+        nombre_cargador: r.nombre_cargador,
+        nif_cargador: r.nif_cargador,
+        direccion_cargador: r.direccion_cargador,
+        // Destinatario
+        destinatario_id: r.destinatario_id,
+        nombre_destinatario: r.nombre_destinatario,
+        nif_destinatario: r.nif_destinatario,
+        direccion_destinatario: r.direccion_destinatario,
+        // Vehiculo y conductor
         vehiculo_id: r.vehiculo_id,
         matricula_vehiculo: r.matricula_vehiculo,
         remolque_id: r.remolque_id,
@@ -666,7 +772,7 @@ const Decas = {
 
   async _generarPDFConDatos(d) {
     try {
-      // Verificar que jsPDF está disponible
+      // Verificar que jsPDF esta disponible
       if (typeof window.jspdf === 'undefined') {
         showToast('Cargando generador de PDF...', 'info');
         await new Promise(r => setTimeout(r, 1000));
@@ -678,152 +784,189 @@ const Decas = {
 
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = 210;
-      const margin = 15;
-      const contentWidth = pageWidth - margin * 2;
-      let y = 15;
+      const pw = 210; // page width
+      const m = 14;   // margin
+      const cw = pw - m * 2; // content width
+      let y = 0;
 
-      // ---- CABECERA ----
-      doc.setFillColor(26, 86, 219); // primary color
-      doc.rect(0, 0, pageWidth, 32, 'F');
+      // Colores
+      const PRIMARY = [26, 86, 219];
+      const DARK = [30, 30, 30];
+      const GRAY = [120, 120, 120];
+      const LIGHT_BG = [245, 247, 252];
+      const WHITE = [255, 255, 255];
 
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(18);
+      // ========== CABECERA — banda de color ==========
+      doc.setFillColor(...PRIMARY);
+      doc.rect(0, 0, pw, 28, 'F');
+      doc.setTextColor(...WHITE);
+      doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
-      doc.text('DOCUMENTO ELECTRÓNICO DE CONTROL', pageWidth / 2, 14, { align: 'center' });
-      doc.text('ADMINISTRATIVO (DeCA)', pageWidth / 2, 22, { align: 'center' });
-
-      doc.setFontSize(10);
+      doc.text('DOCUMENTO DE CONTROL', pw / 2, 12, { align: 'center' });
+      doc.setFontSize(11);
+      doc.text('Documento Electronico de Control Administrativo (DeCA)', pw / 2, 19, { align: 'center' });
+      doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
-      doc.text(`Ref: ${d.referencia || '—'}  |  Versión: ${d.version || 1}`, pageWidth / 2, 29, { align: 'center' });
+      doc.text('Conforme a la Orden TRM/282/2026', pw / 2, 25, { align: 'center' });
 
-      y = 38;
-      doc.setTextColor(0, 0, 0);
+      y = 33;
 
-      // ---- HELPERS ----
-      const sectionTitle = (title, posY) => {
-        doc.setFillColor(240, 244, 255);
-        doc.rect(margin, posY - 4, contentWidth, 7, 'F');
-        doc.setFontSize(10);
+      // ========== BLOQUE EMPRESA TRANSPORTISTA ==========
+      doc.setFillColor(...LIGHT_BG);
+      doc.roundedRect(m, y, cw, 22, 2, 2, 'F');
+      doc.setTextColor(...DARK);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text(this.EMPRESA.nombre, m + 4, y + 7);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...GRAY);
+      doc.text(`NIF: ${this.EMPRESA.nif}`, m + 4, y + 13);
+      doc.text(this.EMPRESA.direccion, m + 4, y + 18);
+      // Referencia y version a la derecha
+      doc.setTextColor(...DARK);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Ref: ${d.referencia || '--'}`, pw - m - 4, y + 7, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...GRAY);
+      doc.text(`Version: ${d.version || 1}`, pw - m - 4, y + 13, { align: 'right' });
+      if (this.EMPRESA.num_autorizacion) {
+        doc.text(`Aut: ${this.EMPRESA.num_autorizacion}`, pw - m - 4, y + 18, { align: 'right' });
+      }
+
+      y += 27;
+
+      // ========== HELPERS ==========
+      const sectionTitle = (title) => {
+        doc.setFillColor(...PRIMARY);
+        doc.rect(m, y, cw, 7, 'F');
+        doc.setTextColor(...WHITE);
+        doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(26, 86, 219);
-        doc.text(title, margin + 2, posY);
-        doc.setTextColor(0, 0, 0);
+        doc.text(title, m + 3, y + 5);
+        doc.setTextColor(...DARK);
         doc.setFont('helvetica', 'normal');
-        return posY + 10;
+        y += 10;
       };
 
-      const field = (label, value, posY, x, maxW) => {
-        doc.setFontSize(8);
-        doc.setTextColor(120, 120, 120);
-        doc.text(label, x, posY);
-        doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0);
-        doc.text(String(value || '—'), x, posY + 5, { maxWidth: maxW || 80 });
-        return posY + 12;
+      const row = (label, value, x, w) => {
+        doc.setFontSize(7.5);
+        doc.setTextColor(...GRAY);
+        doc.text(label, x, y);
+        doc.setFontSize(9.5);
+        doc.setTextColor(...DARK);
+        doc.setFont('helvetica', 'bold');
+        doc.text(String(value || '--'), x, y + 4.5, { maxWidth: w || 75 });
+        doc.setFont('helvetica', 'normal');
       };
 
-      const col1 = margin + 2;
-      const col2 = margin + contentWidth / 2;
+      const col1 = m + 3;
+      const col2 = m + cw / 2 + 2;
+      const halfW = cw / 2 - 6;
 
       const fecha = d.fecha_transporte
         ? new Date(d.fecha_transporte).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
-        : '—';
+        : '--';
 
-      // ---- CÓDIGO QR (centrado, zona propia debajo de cabecera) ----
+      // ========== SECCION: PARTES INTERVINIENTES ==========
+      sectionTitle('PARTES INTERVINIENTES');
+
+      // Cargador contractual / Expedidor
+      doc.setFontSize(8);
+      doc.setTextColor(...PRIMARY);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Cargador contractual / Expedidor', col1, y);
+      doc.setFont('helvetica', 'normal');
+      y += 4;
+      row('Nombre / Razon social', d.nombre_cargador, col1, halfW);
+      row('NIF', d.nif_cargador, col2, halfW);
+      y += 8;
+      row('Direccion', d.direccion_cargador, col1, cw - 6);
+      y += 10;
+
+      // Destinatario
+      doc.setFontSize(8);
+      doc.setTextColor(...PRIMARY);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Destinatario', col1, y);
+      doc.setFont('helvetica', 'normal');
+      y += 4;
+      row('Nombre / Razon social', d.nombre_destinatario, col1, halfW);
+      row('NIF', d.nif_destinatario, col2, halfW);
+      y += 8;
+      row('Direccion', d.direccion_destinatario, col1, cw - 6);
+      y += 10;
+
+      // Transportista efectivo
+      doc.setFontSize(8);
+      doc.setTextColor(...PRIMARY);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Transportista efectivo', col1, y);
+      doc.setFont('helvetica', 'normal');
+      y += 4;
+      row('Nombre / Razon social', d.empresa, col1, halfW);
+      row('NIF', d.nif_empresa, col2, halfW);
+      y += 8;
+      row('Direccion', this.EMPRESA.direccion, col1, halfW);
+      row('N. autorizacion', d.num_autorizacion || '--', col2, halfW);
+      y += 12;
+
+      // ========== SECCION: ENVIO ==========
+      sectionTitle('ENVIO');
+
+      row('Lugar de carga', d.origen, col1, halfW);
+      row('Lugar de descarga', d.destino, col2, halfW);
+      y += 8;
+      row('Fecha de transporte', fecha, col1, halfW);
+      row('Hora de carga', d.hora_carga || '--', col2, halfW);
+      y += 8;
+      row('Naturaleza de la mercancia', d.descripcion_mercancia, col1, cw - 6);
+      y += 8;
+      row('Peso (kg)', d.peso ? Number(d.peso).toLocaleString('es-ES') + ' kg' : '--', col1, halfW);
+      row('Bultos', d.bultos || '--', col2, halfW);
+      y += 8;
+      row('N. expedicion', d.num_expedicion || d.referencia || '--', col1, halfW);
+      y += 12;
+
+      // ========== SECCION: VEHICULO ==========
+      sectionTitle('VEHICULO');
+
+      row('Matricula vehiculo', d.matricula_vehiculo, col1, halfW);
+      row('Matricula remolque', d.matricula_remolque || 'N/A', col2, halfW);
+      y += 8;
+      row('Conductor', d.nombre_conductor, col1, halfW);
+      row('DNI / NIE', d.dni_conductor, col2, halfW);
+      y += 14;
+
+      // ========== CODIGO QR ==========
       const qrUrl = d.qr_code || `https://deca-manager.netlify.app/deca.html?ref=${d.referencia}`;
-      const qrSize = 32;
       if (typeof QRious !== 'undefined') {
         try {
           const qr = new QRious({ value: qrUrl, size: 400, level: 'M' });
           const qrData = qr.toDataURL('image/png');
-          // QR a la derecha, info básica a la izquierda
-          const qrX = pageWidth - margin - qrSize - 2;
-          const qrY = y;
-          doc.addImage(qrData, 'PNG', qrX, qrY, qrSize, qrSize);
-
+          const qrSize = 30;
+          const qrX = pw / 2 - qrSize / 2;
+          doc.addImage(qrData, 'PNG', qrX, y, qrSize, qrSize);
           doc.setFontSize(7);
-          doc.setTextColor(120, 120, 120);
-          doc.text('Escanear para verificar', qrX + qrSize / 2, qrY + qrSize + 3, { align: 'center' });
-          doc.setTextColor(0, 0, 0);
-
-          // Info básica al lado del QR
-          doc.setFontSize(8);
-          doc.setTextColor(120, 120, 120);
-          doc.text('Fecha de transporte', col1, y + 2);
-          doc.setFontSize(11);
-          doc.setTextColor(0, 0, 0);
-          doc.setFont('helvetica', 'bold');
-          doc.text(fecha, col1, y + 8);
-          doc.setFont('helvetica', 'normal');
-
-          doc.setFontSize(8);
-          doc.setTextColor(120, 120, 120);
-          doc.text('Ruta', col1, y + 16);
-          doc.setFontSize(11);
-          doc.setTextColor(0, 0, 0);
-          doc.setFont('helvetica', 'bold');
-          doc.text(`${d.origen || '?'}  --  ${d.destino || '?'}`, col1, y + 22);
-          doc.setFont('helvetica', 'normal');
-
-          if (d.num_expedicion) {
-            doc.setFontSize(8);
-            doc.setTextColor(120, 120, 120);
-            doc.text('N.º expedición', col1, y + 30);
-            doc.setFontSize(10);
-            doc.setTextColor(0, 0, 0);
-            doc.text(d.num_expedicion, col1, y + 36);
-          }
-
-          y = qrY + qrSize + 10;
+          doc.setTextColor(...GRAY);
+          doc.text('Escanear para verificar y descargar el documento', pw / 2, y + qrSize + 4, { align: 'center' });
+          doc.text(qrUrl, pw / 2, y + qrSize + 8, { align: 'center' });
         } catch (qrErr) {
           console.warn('Error generando QR:', qrErr);
-          y += 4;
         }
-      } else {
-        console.warn('QRious library not loaded');
-        y += 4;
       }
 
-      // ---- DATOS DEL TRANSPORTE ----
-      y = sectionTitle('DATOS DEL TRANSPORTE', y);
-      field('Descripción mercancía', d.descripcion_mercancia, y, col1, contentWidth - 4);
-      y += 12;
-
-      field('Peso (kg)', d.peso ? Number(d.peso).toLocaleString('es-ES') + ' kg' : '—', y, col1);
-      field('Bultos', d.bultos, y, col2);
-      y += 16;
-
-      // Sección: Transportista
-      y = sectionTitle('DATOS DEL TRANSPORTISTA', y);
-      field('Empresa', d.empresa, y, col1);
-      field('NIF', d.nif_empresa, y, col2);
-      y += 12;
-      field('N.º autorización', d.num_autorizacion, y, col1);
-      y += 16;
-
-      // Sección: Conductor
-      y = sectionTitle('DATOS DEL CONDUCTOR', y);
-      field('Nombre', d.nombre_conductor, y, col1);
-      field('DNI', d.dni_conductor, y, col2);
-      y += 16;
-
-      // Sección: Vehículo
-      y = sectionTitle('VEHÍCULO Y REMOLQUE', y);
-      field('Matrícula vehículo', d.matricula_vehiculo, y, col1);
-      field('Matrícula remolque', d.matricula_remolque || 'N/A', y, col2);
-      y += 16;
-
-      // ---- PIE DE PÁGINA ----
-      const footerY = 280;
+      // ========== PIE DE PAGINA ==========
+      const footerY = 282;
       doc.setDrawColor(200, 200, 200);
-      doc.line(margin, footerY, pageWidth - margin, footerY);
+      doc.line(m, footerY, pw - m, footerY);
       doc.setFontSize(7);
       doc.setTextColor(150, 150, 150);
-      doc.text(`Generado por DeCA Manager — ${new Date().toLocaleString('es-ES')}`, margin, footerY + 4);
-      doc.text(`Ref: ${d.referencia} | Conforme a Orden TRM/282/2026`, pageWidth - margin, footerY + 4, { align: 'right' });
+      doc.text(`Generado por DeCA Manager -- ${new Date().toLocaleString('es-ES')}`, m, footerY + 4);
+      doc.text(`Ref: ${d.referencia} | Conforme a Orden TRM/282/2026`, pw - m, footerY + 4, { align: 'right' });
 
-      // ---- DESCARGAR ----
+      // ========== DESCARGAR ==========
       doc.save(`${d.referencia || 'DeCA'}.pdf`);
       showToast('PDF generado correctamente');
 
