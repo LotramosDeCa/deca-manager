@@ -190,143 +190,194 @@
       `;
     }
 
+    // Datos empresa (mismos que en decas.js)
+    const EMPRESA = {
+      nombre: 'Lotramos SL',
+      nif: 'B45849353',
+      direccion: 'AV. Principe, 82 - 45692 Malpica de Tajo',
+      num_autorizacion: '',
+    };
+
     async function generarYDescargarPDF(d) {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = 210;
-      const margin = 15;
-      const contentWidth = pageWidth - margin * 2;
-      let y = 15;
+      const pw = 210;
+      const m = 14;
+      const cw = pw - m * 2;
+      let y = 0;
 
-      // ===== CABECERA =====
-      doc.setFillColor(26, 86, 219);
-      doc.rect(0, 0, pageWidth, 32, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(18);
+      // Colores
+      const PRIMARY = [26, 86, 219];
+      const DARK = [30, 30, 30];
+      const GRAY = [120, 120, 120];
+      const LIGHT_BG = [245, 247, 252];
+      const WHITE = [255, 255, 255];
+
+      // ========== CABECERA ==========
+      doc.setFillColor(...PRIMARY);
+      doc.rect(0, 0, pw, 28, 'F');
+      doc.setTextColor(...WHITE);
+      doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
-      doc.text('DOCUMENTO ELECTRÓNICO DE CONTROL', pageWidth / 2, 14, { align: 'center' });
-      doc.text('ADMINISTRATIVO (DeCA)', pageWidth / 2, 22, { align: 'center' });
-      doc.setFontSize(10);
+      doc.text('DOCUMENTO DE CONTROL', pw / 2, 12, { align: 'center' });
+      doc.setFontSize(11);
+      doc.text('Documento Electronico de Control Administrativo (DeCA)', pw / 2, 19, { align: 'center' });
+      doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
-      doc.text('Ref: ' + (d.referencia || '') + '  |  Versión: ' + (d.version || 1), pageWidth / 2, 29, { align: 'center' });
+      doc.text('Conforme a la Orden TRM/282/2026', pw / 2, 25, { align: 'center' });
 
-      y = 38;
-      doc.setTextColor(0, 0, 0);
+      y = 33;
 
-      // ===== HELPERS =====
-      const sectionTitle = (title, posY) => {
-        doc.setFillColor(240, 244, 255);
-        doc.rect(margin, posY - 4, contentWidth, 7, 'F');
-        doc.setFontSize(10);
+      // ========== BLOQUE EMPRESA ==========
+      doc.setFillColor(...LIGHT_BG);
+      doc.roundedRect(m, y, cw, 22, 2, 2, 'F');
+      doc.setTextColor(...DARK);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text(EMPRESA.nombre, m + 4, y + 7);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...GRAY);
+      doc.text('NIF: ' + EMPRESA.nif, m + 4, y + 13);
+      doc.text(EMPRESA.direccion, m + 4, y + 18);
+      doc.setTextColor(...DARK);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Ref: ' + (d.referencia || '--'), pw - m - 4, y + 7, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...GRAY);
+      doc.text('Version: ' + (d.version || 1), pw - m - 4, y + 13, { align: 'right' });
+      if (EMPRESA.num_autorizacion) {
+        doc.text('Aut: ' + EMPRESA.num_autorizacion, pw - m - 4, y + 18, { align: 'right' });
+      }
+
+      y += 27;
+
+      // ========== HELPERS ==========
+      const sectionTitle = (title) => {
+        doc.setFillColor(...PRIMARY);
+        doc.rect(m, y, cw, 7, 'F');
+        doc.setTextColor(...WHITE);
+        doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(26, 86, 219);
-        doc.text(title, margin + 2, posY);
-        doc.setTextColor(0, 0, 0);
+        doc.text(title, m + 3, y + 5);
+        doc.setTextColor(...DARK);
         doc.setFont('helvetica', 'normal');
-        return posY + 10;
+        y += 10;
       };
 
-      const field = (label, value, posY, x, maxW) => {
-        doc.setFontSize(8);
-        doc.setTextColor(120, 120, 120);
-        doc.text(label, x, posY);
-        doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0);
-        doc.text(String(value || '—'), x, posY + 5, { maxWidth: maxW || 80 });
-        return posY + 12;
+      const row = (label, value, x, w) => {
+        doc.setFontSize(7.5);
+        doc.setTextColor(...GRAY);
+        doc.text(label, x, y);
+        doc.setFontSize(9.5);
+        doc.setTextColor(...DARK);
+        doc.setFont('helvetica', 'bold');
+        doc.text(String(value || '--'), x, y + 4.5, { maxWidth: w || 75 });
+        doc.setFont('helvetica', 'normal');
       };
 
-      const col1 = margin + 2;
-      const col2 = margin + contentWidth / 2;
+      const col1 = m + 3;
+      const col2 = m + cw / 2 + 2;
+      const halfW = cw / 2 - 6;
 
       const fecha = d.fecha_transporte
         ? new Date(d.fecha_transporte).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
-        : '—';
+        : '--';
 
-      // ===== QR + INFO BÁSICA =====
-      const qrUrl = d.qr_code || `https://deca-manager.netlify.app/deca.html?ref=${d.referencia}`;
-      const qrSize = 32;
+      // ========== PARTES INTERVINIENTES ==========
+      sectionTitle('PARTES INTERVINIENTES');
+
+      doc.setFontSize(8);
+      doc.setTextColor(...PRIMARY);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Cargador contractual / Expedidor', col1, y);
+      doc.setFont('helvetica', 'normal');
+      y += 4;
+      row('Nombre / Razon social', d.nombre_cargador, col1, halfW);
+      row('NIF', d.nif_cargador, col2, halfW);
+      y += 8;
+      row('Direccion', d.direccion_cargador, col1, cw - 6);
+      y += 10;
+
+      doc.setFontSize(8);
+      doc.setTextColor(...PRIMARY);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Destinatario', col1, y);
+      doc.setFont('helvetica', 'normal');
+      y += 4;
+      row('Nombre / Razon social', d.nombre_destinatario, col1, halfW);
+      row('NIF', d.nif_destinatario, col2, halfW);
+      y += 8;
+      row('Direccion', d.direccion_destinatario, col1, cw - 6);
+      y += 10;
+
+      doc.setFontSize(8);
+      doc.setTextColor(...PRIMARY);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Transportista efectivo', col1, y);
+      doc.setFont('helvetica', 'normal');
+      y += 4;
+      row('Nombre / Razon social', d.empresa, col1, halfW);
+      row('NIF', d.nif_empresa, col2, halfW);
+      y += 8;
+      row('Direccion', EMPRESA.direccion, col1, halfW);
+      row('N. autorizacion', d.num_autorizacion || '--', col2, halfW);
+      y += 12;
+
+      // ========== ENVIO ==========
+      sectionTitle('ENVIO');
+
+      row('Lugar de carga', d.origen, col1, halfW);
+      row('Lugar de descarga', d.destino, col2, halfW);
+      y += 8;
+      row('Fecha de transporte', fecha, col1, halfW);
+      row('Hora de carga', d.hora_carga || '--', col2, halfW);
+      y += 8;
+      row('Naturaleza de la mercancia', d.descripcion_mercancia, col1, cw - 6);
+      y += 8;
+      row('Peso (kg)', d.peso ? Number(d.peso).toLocaleString('es-ES') + ' kg' : '--', col1, halfW);
+      row('Bultos', d.bultos || '--', col2, halfW);
+      y += 8;
+      row('N. expedicion', d.num_expedicion || d.referencia || '--', col1, halfW);
+      y += 12;
+
+      // ========== VEHICULO ==========
+      sectionTitle('VEHICULO');
+
+      row('Matricula vehiculo', d.matricula_vehiculo, col1, halfW);
+      row('Matricula remolque', d.matricula_remolque || 'N/A', col2, halfW);
+      y += 8;
+      row('Conductor', d.nombre_conductor, col1, halfW);
+      row('DNI / NIE', d.dni_conductor, col2, halfW);
+      y += 14;
+
+      // ========== QR ==========
+      const qrUrl = d.qr_code || 'https://deca-manager.netlify.app/deca.html?ref=' + d.referencia;
       if (typeof QRious !== 'undefined') {
         try {
           const qr = new QRious({ value: qrUrl, size: 400, level: 'M' });
           const qrData = qr.toDataURL('image/png');
-          const qrX = pageWidth - margin - qrSize - 2;
-          const qrY = y;
-          doc.addImage(qrData, 'PNG', qrX, qrY, qrSize, qrSize);
+          const qrSize = 30;
+          const qrX = pw / 2 - qrSize / 2;
+          doc.addImage(qrData, 'PNG', qrX, y, qrSize, qrSize);
           doc.setFontSize(7);
-          doc.setTextColor(120, 120, 120);
-          doc.text('Escanear para verificar', qrX + qrSize / 2, qrY + qrSize + 3, { align: 'center' });
-          doc.setTextColor(0, 0, 0);
+          doc.setTextColor(...GRAY);
+          doc.text('Escanear para verificar y descargar el documento', pw / 2, y + qrSize + 4, { align: 'center' });
+          doc.text(qrUrl, pw / 2, y + qrSize + 8, { align: 'center' });
+        } catch (e) { console.warn('QR error:', e); }
+      }
 
-          doc.setFontSize(8);
-          doc.setTextColor(120, 120, 120);
-          doc.text('Fecha de transporte', col1, y + 2);
-          doc.setFontSize(11);
-          doc.setTextColor(0, 0, 0);
-          doc.setFont('helvetica', 'bold');
-          doc.text(fecha, col1, y + 8);
-          doc.setFont('helvetica', 'normal');
-
-          doc.setFontSize(8);
-          doc.setTextColor(120, 120, 120);
-          doc.text('Ruta', col1, y + 16);
-          doc.setFontSize(11);
-          doc.setTextColor(0, 0, 0);
-          doc.setFont('helvetica', 'bold');
-          doc.text((d.origen || '?') + '  --  ' + (d.destino || '?'), col1, y + 22);
-          doc.setFont('helvetica', 'normal');
-
-          if (d.num_expedicion) {
-            doc.setFontSize(8);
-            doc.setTextColor(120, 120, 120);
-            doc.text('N.º expedición', col1, y + 30);
-            doc.setFontSize(10);
-            doc.setTextColor(0, 0, 0);
-            doc.text(d.num_expedicion, col1, y + 36);
-          }
-
-          y = qrY + qrSize + 10;
-        } catch (e) { console.warn('QR error:', e); y += 4; }
-      } else { y += 4; }
-
-      // ===== DATOS DEL TRANSPORTE =====
-      y = sectionTitle('DATOS DEL TRANSPORTE', y);
-      field('Descripción mercancía', d.descripcion_mercancia, y, col1, contentWidth - 4);
-      y += 12;
-      field('Peso (kg)', d.peso ? Number(d.peso).toLocaleString('es-ES') + ' kg' : '—', y, col1);
-      field('Bultos', d.bultos, y, col2);
-      y += 16;
-
-      // ===== TRANSPORTISTA =====
-      y = sectionTitle('DATOS DEL TRANSPORTISTA', y);
-      field('Empresa', d.empresa, y, col1);
-      field('NIF', d.nif_empresa, y, col2);
-      y += 12;
-      field('N.º autorización', d.num_autorizacion, y, col1);
-      y += 16;
-
-      // ===== CONDUCTOR =====
-      y = sectionTitle('DATOS DEL CONDUCTOR', y);
-      field('Nombre', d.nombre_conductor, y, col1);
-      field('DNI', d.dni_conductor, y, col2);
-      y += 16;
-
-      // ===== VEHÍCULO =====
-      y = sectionTitle('VEHÍCULO Y REMOLQUE', y);
-      field('Matrícula vehículo', d.matricula_vehiculo, y, col1);
-      field('Matrícula remolque', d.matricula_remolque || 'N/A', y, col2);
-      y += 16;
-
-      // ===== PIE =====
-      const footerY = 280;
+      // ========== PIE ==========
+      const footerY = 282;
       doc.setDrawColor(200, 200, 200);
-      doc.line(margin, footerY, pageWidth - margin, footerY);
+      doc.line(m, footerY, pw - m, footerY);
       doc.setFontSize(7);
       doc.setTextColor(150, 150, 150);
-      doc.text('Generado por DeCA Manager — ' + new Date().toLocaleString('es-ES'), margin, footerY + 4);
-      doc.text('Ref: ' + d.referencia + ' | Conforme a Orden TRM/282/2026', pageWidth - margin, footerY + 4, { align: 'right' });
+      doc.text('Generado por DeCA Manager -- ' + new Date().toLocaleString('es-ES'), m, footerY + 4);
+      doc.text('Ref: ' + d.referencia + ' | Conforme a Orden TRM/282/2026', pw - m, footerY + 4, { align: 'right' });
 
-      // ===== DESCARGAR =====
+      // ========== DESCARGAR ==========
       doc.save((d.referencia || 'DeCA') + '.pdf');
     }
 
