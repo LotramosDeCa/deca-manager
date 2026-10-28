@@ -282,7 +282,11 @@ const Decas = {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           PDF
         </button>
-        ${d.estado === 'activo' ? `
+        ${(d.estado === 'activo' || d.estado === 'modificado') ? `
+        <button class="btn btn-primary" style="background:#f59e0b; justify-content:center;" onclick="Decas.showEditForm('${d.id}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Editar
+        </button>
         <button class="btn btn-primary" style="background:#059669; justify-content:center;" onclick="Decas.cambiarEstado('${d.id}', 'finalizado')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
           Finalizar
@@ -745,6 +749,404 @@ const Decas = {
     });
   },
 
+  // ====== FORMULARIO EDITAR DECA ======
+  async showEditForm(decaId) {
+    closeModal();
+
+    // Buscar la DeCA en la lista cargada
+    let deca = this.list.find(d => d.id === decaId);
+    if (!deca) {
+      const { data } = await sbSelect('decas', 'select=*&id=eq.' + decaId);
+      deca = Array.isArray(data) ? data[0] : data;
+    }
+    if (!deca) { showToast('DeCA no encontrada', 'error'); return; }
+    if (deca.estado !== 'activo' && deca.estado !== 'modificado') {
+      showToast('Solo se pueden editar DeCA activas o modificadas', 'error');
+      return;
+    }
+
+    // Guardar datos originales para comparar después
+    this._editOriginal = { ...deca };
+
+    // Cargar listas en paralelo
+    const [vehiculos, remolques, conductores, clientesRes] = await Promise.all([
+      sbSelect('vehiculos', 'select=id,matricula,marca,modelo&activo=eq.true&order=matricula.asc'),
+      sbSelect('remolques', 'select=id,matricula,marca,modelo&activo=eq.true&order=matricula.asc'),
+      sbSelect('profiles', 'select=id,user_id,nombre,apellidos,dni&activo=eq.true&rol=eq.conductor&order=nombre.asc'),
+      sbSelect('clientes', 'select=id,nombre,nif,direccion,poblacion,codigo_postal,provincia&activo=eq.true&order=nombre.asc'),
+    ]);
+
+    this.vehiculosActivos = vehiculos.data || [];
+    this.remolquesActivos = remolques.data || [];
+    const conductoresActivos = conductores.data || [];
+    this._clientesActivos = clientesRes.data || [];
+
+    const admins = await sbSelect('profiles', 'select=id,user_id,nombre,apellidos,dni&activo=eq.true&rol=eq.admin&order=nombre.asc');
+    const todosConductores = [...conductoresActivos, ...(admins.data || [])];
+
+    // Construir opciones con pre-selección
+    const clienteOptions = this._clientesActivos.map(c => {
+      const dir = [c.direccion, c.poblacion, c.codigo_postal, c.provincia].filter(Boolean).join(', ');
+      return `<option value="${c.id}" data-nombre="${c.nombre}" data-nif="${c.nif || ''}" data-direccion="${dir}">${c.nombre}${c.nif ? ' (' + c.nif + ')' : ''}</option>`;
+    }).join('');
+
+    const formHTML = `
+      <form id="deca-form" style="display:flex; flex-direction:column; gap:4px; max-height:65vh; overflow-y:auto; padding-right:4px;">
+
+        <div style="background:var(--warning-bg, #fef3c7); border-radius:8px; padding:8px 12px; margin-bottom:4px;">
+          <p style="font-size:12px; color:#92400e; font-weight:600;">Editando: ${deca.referencia} (v${deca.version})</p>
+        </div>
+
+        <p style="font-size:12px; color:var(--gray-500); margin-bottom:4px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Partes intervinientes</p>
+
+        <div class="form-group">
+          <label for="deca-cargador">Cargador / Expedidor *</label>
+          <select id="deca-cargador" required>
+            <option value="">Seleccionar cargador</option>
+            ${clienteOptions}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="deca-destinatario">Destinatario *</label>
+          <select id="deca-destinatario" required>
+            <option value="">Seleccionar destinatario</option>
+            ${clienteOptions}
+          </select>
+        </div>
+
+        <hr style="border:none; border-top:1px solid var(--gray-200); margin:8px 0;">
+        <p style="font-size:12px; color:var(--gray-500); margin-bottom:4px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Datos del envio</p>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="deca-fecha">Fecha de transporte *</label>
+            <input type="date" id="deca-fecha" required value="${deca.fecha_transporte || ''}">
+          </div>
+          <div class="form-group">
+            <label for="deca-hora-carga">Hora de carga</label>
+            <input type="time" id="deca-hora-carga" value="${deca.hora_carga || ''}">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="deca-origen">Lugar de carga *</label>
+            <input type="text" id="deca-origen" required placeholder="Ciudad o dirección" value="${deca.origen || ''}">
+          </div>
+          <div class="form-group">
+            <label for="deca-destino">Lugar de descarga *</label>
+            <input type="text" id="deca-destino" required placeholder="Ciudad o dirección" value="${deca.destino || ''}">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="deca-mercancia">Naturaleza de la mercancia *</label>
+          <input type="text" id="deca-mercancia" required placeholder="Ej: Material de construcción" value="${deca.descripcion_mercancia || ''}">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="deca-peso">Peso (kg) *</label>
+            <input type="number" id="deca-peso" min="0" step="0.01" required placeholder="0" value="${deca.peso || ''}">
+          </div>
+          <div class="form-group">
+            <label for="deca-bultos">Bultos</label>
+            <input type="number" id="deca-bultos" min="0" placeholder="0" value="${deca.bultos || ''}">
+          </div>
+        </div>
+
+        <hr style="border:none; border-top:1px solid var(--gray-200); margin:8px 0;">
+        <p style="font-size:12px; color:var(--gray-500); margin-bottom:4px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Conductor y vehiculo</p>
+
+        <div class="form-group">
+          <label for="deca-conductor">Conductor *</label>
+          <select id="deca-conductor" required>
+            <option value="">Seleccionar conductor</option>
+            ${todosConductores.map(c => `<option value="${c.id}" data-nombre="${c.nombre} ${c.apellidos}" data-dni="${c.dni || ''}">${c.nombre} ${c.apellidos}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="deca-vehiculo">Vehiculo *</label>
+          <select id="deca-vehiculo" required>
+            <option value="">Seleccionar vehiculo</option>
+            ${this.vehiculosActivos.map(v => `<option value="${v.id}" data-matricula="${v.matricula}">${v.matricula}${v.marca ? ' -- ' + v.marca : ''}${v.modelo ? ' ' + v.modelo : ''}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="deca-remolque">Remolque</label>
+          <select id="deca-remolque">
+            <option value="">Sin remolque</option>
+            ${this.remolquesActivos.map(r => `<option value="${r.id}" data-matricula="${r.matricula}">${r.matricula}${r.marca ? ' -- ' + r.marca : ''}${r.modelo ? ' ' + r.modelo : ''}</option>`).join('')}
+          </select>
+        </div>
+
+        <div id="deca-form-error" class="error-msg" hidden></div>
+      </form>
+    `;
+
+    showModal('Editar DeCA', formHTML, `
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" id="deca-form-submit" style="background:#f59e0b;">
+        <span class="btn-text">Previsualizar cambios</span>
+        <span class="btn-spinner" hidden></span>
+      </button>
+    `);
+
+    // Pre-seleccionar los dropdowns con los valores actuales
+    const setCargador = document.getElementById('deca-cargador');
+    const setDestinatario = document.getElementById('deca-destinatario');
+    const setConductor = document.getElementById('deca-conductor');
+    const setVehiculo = document.getElementById('deca-vehiculo');
+    const setRemolque = document.getElementById('deca-remolque');
+
+    if (deca.cargador_id && setCargador) setCargador.value = deca.cargador_id;
+    if (deca.destinatario_id && setDestinatario) setDestinatario.value = deca.destinatario_id;
+    if (deca.conductor_id && setConductor) setConductor.value = deca.conductor_id;
+    if (deca.vehiculo_id && setVehiculo) setVehiculo.value = deca.vehiculo_id;
+    if (deca.remolque_id && setRemolque) setRemolque.value = deca.remolque_id;
+
+    document.getElementById('deca-form-submit').addEventListener('click', () => this.previsualizarEdicion(decaId));
+  },
+
+  // ====== PREVISUALIZAR CAMBIOS ANTES DE GUARDAR ======
+  previsualizarEdicion(decaId) {
+    const form = document.getElementById('deca-form');
+    if (!form.reportValidity()) return;
+
+    const orig = this._editOriginal;
+    if (!orig) { showToast('Error: datos originales no encontrados', 'error'); return; }
+
+    // Recoger datos nuevos del formulario
+    const cargadorSelect = document.getElementById('deca-cargador');
+    const destinatarioSelect = document.getElementById('deca-destinatario');
+    const conductorSelect = document.getElementById('deca-conductor');
+    const vehiculoSelect = document.getElementById('deca-vehiculo');
+    const remolqueSelect = document.getElementById('deca-remolque');
+
+    const cargadorOption = cargadorSelect.selectedOptions[0];
+    const destinatarioOption = destinatarioSelect.selectedOptions[0];
+    const conductorOption = conductorSelect.selectedOptions[0];
+    const vehiculoOption = vehiculoSelect.selectedOptions[0];
+    const remolqueOption = remolqueSelect.selectedOptions[0];
+
+    this._editNewData = {
+      fecha_transporte: document.getElementById('deca-fecha').value,
+      hora_carga: document.getElementById('deca-hora-carga').value || null,
+      origen: document.getElementById('deca-origen').value.trim(),
+      destino: document.getElementById('deca-destino').value.trim(),
+      descripcion_mercancia: document.getElementById('deca-mercancia').value.trim(),
+      peso: document.getElementById('deca-peso').value ? parseFloat(document.getElementById('deca-peso').value) : null,
+      bultos: document.getElementById('deca-bultos').value ? parseInt(document.getElementById('deca-bultos').value) : null,
+      cargador_id: cargadorSelect.value,
+      nombre_cargador: cargadorOption?.dataset.nombre || '',
+      nif_cargador: cargadorOption?.dataset.nif || '',
+      direccion_cargador: cargadorOption?.dataset.direccion || '',
+      destinatario_id: destinatarioSelect.value,
+      nombre_destinatario: destinatarioOption?.dataset.nombre || '',
+      nif_destinatario: destinatarioOption?.dataset.nif || '',
+      direccion_destinatario: destinatarioOption?.dataset.direccion || '',
+      vehiculo_id: vehiculoSelect.value,
+      matricula_vehiculo: vehiculoOption?.dataset.matricula || '',
+      remolque_id: remolqueSelect.value || null,
+      matricula_remolque: remolqueOption?.dataset.matricula || null,
+      conductor_id: conductorSelect.value,
+      nombre_conductor: conductorOption?.dataset.nombre || '',
+      dni_conductor: conductorOption?.dataset.dni || '',
+    };
+
+    // Campos que se comparan (etiqueta legible + campo DB)
+    const camposComparar = [
+      { key: 'nombre_cargador', label: 'Cargador' },
+      { key: 'nif_cargador', label: 'NIF Cargador' },
+      { key: 'direccion_cargador', label: 'Dir. Cargador' },
+      { key: 'nombre_destinatario', label: 'Destinatario' },
+      { key: 'nif_destinatario', label: 'NIF Destinatario' },
+      { key: 'direccion_destinatario', label: 'Dir. Destinatario' },
+      { key: 'fecha_transporte', label: 'Fecha transporte' },
+      { key: 'hora_carga', label: 'Hora carga' },
+      { key: 'origen', label: 'Lugar de carga' },
+      { key: 'destino', label: 'Lugar de descarga' },
+      { key: 'descripcion_mercancia', label: 'Mercancia' },
+      { key: 'peso', label: 'Peso (kg)' },
+      { key: 'bultos', label: 'Bultos' },
+      { key: 'nombre_conductor', label: 'Conductor' },
+      { key: 'dni_conductor', label: 'DNI Conductor' },
+      { key: 'matricula_vehiculo', label: 'Vehiculo' },
+      { key: 'matricula_remolque', label: 'Remolque' },
+    ];
+
+    // Detectar cambios
+    const cambios = [];
+    for (const c of camposComparar) {
+      const antes = String(orig[c.key] ?? '');
+      const despues = String(this._editNewData[c.key] ?? '');
+      if (antes !== despues) {
+        cambios.push({ key: c.key, label: c.label, antes, despues });
+      }
+    }
+
+    // También guardar cambios de IDs (cargador_id, destinatario_id, etc.) para el UPDATE
+    const idCampos = ['cargador_id', 'destinatario_id', 'vehiculo_id', 'remolque_id', 'conductor_id'];
+    for (const k of idCampos) {
+      const antes = String(orig[k] ?? '');
+      const despues = String(this._editNewData[k] ?? '');
+      if (antes !== despues) {
+        // Si ya no está en cambios (por el campo visible), añadirlo
+        if (!cambios.find(c => c.key === k)) {
+          cambios.push({ key: k, label: k, antes, despues });
+        }
+      }
+    }
+
+    if (cambios.length === 0) {
+      showToast('No hay cambios que guardar', 'info');
+      return;
+    }
+
+    this._editCambios = cambios;
+
+    // Mostrar resumen de cambios
+    const cambiosHTML = cambios
+      .filter(c => !c.key.endsWith('_id')) // No mostrar IDs al usuario
+      .map(c => `
+        <div style="padding:8px 0; border-bottom:1px solid var(--gray-100);">
+          <span style="font-size:11px; color:var(--gray-500); font-weight:600;">${c.label}</span>
+          <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
+            <span style="font-size:12px; color:var(--danger); text-decoration:line-through;">${c.antes || '(vacio)'}</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            <span style="font-size:12px; color:#059669; font-weight:600;">${c.despues || '(vacio)'}</span>
+          </div>
+        </div>
+      `).join('');
+
+    showModal('Confirmar cambios', `
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div style="background:var(--warning-bg, #fef3c7); border-radius:8px; padding:10px 12px;">
+          <p style="font-size:12px; color:#92400e; font-weight:600;">${orig.referencia} -- Version ${orig.version} a ${orig.version + 1}</p>
+          <p style="font-size:11px; color:#92400e;">${cambios.filter(c => !c.key.endsWith('_id')).length} campo(s) modificado(s)</p>
+        </div>
+        <div style="background:var(--gray-50); border-radius:10px; padding:12px; max-height:40vh; overflow-y:auto;">
+          ${cambiosHTML}
+        </div>
+        <div id="deca-edit-error" class="error-msg" hidden></div>
+      </div>
+    `, `
+      <button class="btn btn-secondary" onclick="Decas.showEditForm('${decaId}')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        Volver
+      </button>
+      <button class="btn btn-primary" id="deca-edit-confirm" style="background:#f59e0b;">
+        <span class="btn-text">Guardar cambios</span>
+        <span class="btn-spinner" hidden></span>
+      </button>
+    `);
+
+    document.getElementById('deca-edit-confirm').addEventListener('click', () => this.editarDeca(decaId));
+  },
+
+  // ====== GUARDAR EDICIÓN CON HISTORIAL ======
+  async editarDeca(decaId) {
+    const btn = document.getElementById('deca-edit-confirm');
+    const errorEl = document.getElementById('deca-edit-error');
+    if (!btn) return;
+    if (errorEl) errorEl.hidden = true;
+
+    btn.disabled = true;
+    btn.querySelector('.btn-text').textContent = 'Guardando...';
+    btn.querySelector('.btn-spinner').hidden = false;
+
+    try {
+      const orig = this._editOriginal;
+      const newData = this._editNewData;
+      const cambios = this._editCambios;
+      if (!orig || !newData || !cambios || cambios.length === 0) {
+        throw new Error('No hay datos de edición');
+      }
+
+      const nuevaVersion = (orig.version || 1) + 1;
+      const modificadoPor = Auth.currentProfile.id;
+
+      // 1. Insertar registros de historial (uno por campo cambiado)
+      for (const c of cambios) {
+        const histRecord = {
+          deca_id: decaId,
+          version: nuevaVersion,
+          campo: c.key,
+          valor_anterior: c.antes || null,
+          valor_nuevo: c.despues || null,
+          modificado_por: modificadoPor,
+        };
+        const { error: hErr } = await sbInsert('deca_historial', histRecord);
+        if (hErr) {
+          console.error('[DeCA] Error guardando historial campo ' + c.key + ':', hErr);
+          // Continuar con los demás, no bloquear la edición
+        }
+      }
+
+      // 2. Actualizar la DeCA con los nuevos valores
+      const updateRecord = {
+        fecha_transporte: newData.fecha_transporte,
+        hora_carga: newData.hora_carga,
+        origen: newData.origen,
+        destino: newData.destino,
+        descripcion_mercancia: newData.descripcion_mercancia,
+        peso: newData.peso,
+        bultos: newData.bultos,
+        cargador_id: newData.cargador_id,
+        nombre_cargador: newData.nombre_cargador,
+        nif_cargador: newData.nif_cargador,
+        direccion_cargador: newData.direccion_cargador,
+        destinatario_id: newData.destinatario_id,
+        nombre_destinatario: newData.nombre_destinatario,
+        nif_destinatario: newData.nif_destinatario,
+        direccion_destinatario: newData.direccion_destinatario,
+        vehiculo_id: newData.vehiculo_id,
+        matricula_vehiculo: newData.matricula_vehiculo,
+        remolque_id: newData.remolque_id,
+        matricula_remolque: newData.matricula_remolque,
+        conductor_id: newData.conductor_id,
+        nombre_conductor: newData.nombre_conductor,
+        dni_conductor: newData.dni_conductor,
+        version: nuevaVersion,
+        estado: 'modificado',
+      };
+
+      const { error: uErr } = await sbUpdate('decas', 'id=eq.' + decaId, updateRecord);
+      if (uErr) throw new Error(uErr.message);
+
+      console.log('[DeCA] Editada OK:', orig.referencia, 'v' + nuevaVersion);
+
+      // Limpiar datos temporales
+      this._editOriginal = null;
+      this._editNewData = null;
+      this._editCambios = null;
+
+      closeModal();
+      showToast(`DeCA ${orig.referencia} actualizada (v${nuevaVersion})`);
+      await this.loadDecas();
+
+    } catch (err) {
+      console.error('[DeCA] Error editando:', err);
+      if (errorEl && errorEl.isConnected) {
+        errorEl.textContent = err.message;
+        errorEl.hidden = false;
+      } else {
+        showToast('Error: ' + err.message, 'error');
+      }
+    } finally {
+      if (btn && btn.isConnected) {
+        btn.disabled = false;
+        const txt = btn.querySelector('.btn-text');
+        const sp = btn.querySelector('.btn-spinner');
+        if (txt) txt.textContent = 'Guardar cambios';
+        if (sp) sp.hidden = true;
+      }
+    }
+  },
+
   // ====== CAMBIAR ESTADO (finalizar / anular) ======
   async cambiarEstado(decaId, nuevoEstado) {
     const labels = { finalizado: 'finalizar', anulado: 'anular' };
@@ -957,14 +1359,85 @@ const Decas = {
         }
       }
 
+      // ========== DATOS CORREGIDOS (si version > 1) ==========
+      if (d.version && d.version > 1) {
+        try {
+          const { data: historial } = await sbSelect('deca_historial',
+            `select=*&deca_id=eq.${d.id}&order=version.asc,created_at.asc`);
+          const registros = historial || [];
+
+          if (registros.length > 0) {
+            const campoLabel = {
+              nombre_cargador: 'Cargador', nif_cargador: 'NIF Cargador',
+              direccion_cargador: 'Dir. Cargador', nombre_destinatario: 'Destinatario',
+              nif_destinatario: 'NIF Destinatario', direccion_destinatario: 'Dir. Destinatario',
+              fecha_transporte: 'Fecha transporte', hora_carga: 'Hora carga',
+              origen: 'Lugar de carga', destino: 'Lugar de descarga',
+              descripcion_mercancia: 'Mercancia', peso: 'Peso (kg)', bultos: 'Bultos',
+              nombre_conductor: 'Conductor', dni_conductor: 'DNI Conductor',
+              matricula_vehiculo: 'Vehiculo', matricula_remolque: 'Remolque',
+            };
+
+            y += 46; // Después del QR
+
+            if (y > 240) { doc.addPage(); y = 20; }
+
+            // Título sección naranja
+            doc.setFillColor(220, 120, 20);
+            doc.rect(m, y, cw, 7, 'F');
+            doc.setTextColor(...WHITE);
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            doc.text('DATOS CORREGIDOS', m + 3, y + 5);
+            y += 10;
+
+            // Cabecera tabla
+            doc.setFillColor(245, 245, 245);
+            doc.rect(m, y - 1, cw, 6, 'F');
+            doc.setTextColor(...DARK);
+            doc.setFontSize(7);
+            doc.setFont('helvetica', 'bold');
+            doc.text('V.', m + 2, y + 3);
+            doc.text('Campo', m + 12, y + 3);
+            doc.text('Valor anterior', m + 55, y + 3);
+            doc.text('Valor nuevo', m + 120, y + 3);
+            doc.setFont('helvetica', 'normal');
+            y += 7;
+
+            for (const h of registros) {
+              if (h.campo && h.campo.endsWith('_id')) continue;
+              if (y > 272) { doc.addPage(); y = 20; }
+
+              doc.setDrawColor(230, 230, 230);
+              doc.line(m, y - 1, pw - m, y - 1);
+              doc.setFontSize(7);
+              doc.setTextColor(...DARK);
+              doc.text(String(h.version), m + 2, y + 3);
+              doc.text(campoLabel[h.campo] || h.campo, m + 12, y + 3);
+              doc.setTextColor(180, 60, 60);
+              doc.text(String(h.valor_anterior || '(vacio)'), m + 55, y + 3, { maxWidth: 60 });
+              doc.setTextColor(20, 130, 80);
+              doc.text(String(h.valor_nuevo || '(vacio)'), m + 120, y + 3, { maxWidth: 60 });
+              y += 6;
+            }
+          }
+        } catch (histErr) {
+          console.warn('Error cargando historial para PDF:', histErr);
+        }
+      }
+
       // ========== PIE DE PAGINA ==========
-      const footerY = 282;
-      doc.setDrawColor(200, 200, 200);
-      doc.line(m, footerY, pw - m, footerY);
-      doc.setFontSize(7);
-      doc.setTextColor(150, 150, 150);
-      doc.text(`Generado por DeCA Manager -- ${new Date().toLocaleString('es-ES')}`, m, footerY + 4);
-      doc.text(`Ref: ${d.referencia} | Conforme a Orden TRM/282/2026`, pw - m, footerY + 4, { align: 'right' });
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let p = 1; p <= totalPages; p++) {
+        doc.setPage(p);
+        const footerY = 282;
+        doc.setDrawColor(200, 200, 200);
+        doc.line(m, footerY, pw - m, footerY);
+        doc.setFontSize(7);
+        doc.setTextColor(150, 150, 150);
+        doc.text(`Generado por DeCA Manager -- ${new Date().toLocaleString('es-ES')}`, m, footerY + 4);
+        doc.text(`Ref: ${d.referencia} | Pag. ${p}/${totalPages} | Conforme a Orden TRM/282/2026`, pw - m, footerY + 4, { align: 'right' });
+      }
 
       // ========== DESCARGAR ==========
       doc.save(`${d.referencia || 'DeCA'}.pdf`);
