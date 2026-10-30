@@ -226,7 +226,7 @@ const Usuarios = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + SB_TOKEN,
+          'Authorization': 'Bearer ' + sbToken(),
           'apikey': SUPABASE_ANON_KEY
         },
         body: JSON.stringify({ email, password, nombre, apellidos, dni, telefono, rol })
