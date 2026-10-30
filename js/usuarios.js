@@ -221,14 +221,19 @@ const Usuarios = {
     btn.querySelector('.btn-spinner').hidden = false;
 
     try {
-      // Llamar a la Edge Function para crear usuario
-      // (Necesitamos una Edge Function porque crear usuarios requiere service_role key)
-      const { data, error } = await supabase.functions.invoke('create-user', {
-        body: { email, password, nombre, apellidos, dni, telefono, rol }
+      // Llamar a la Edge Function via fetch directo (el SDK da problemas con Tracking Prevention)
+      const res = await fetch(SUPABASE_URL + '/functions/v1/create-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + SB_TOKEN,
+          'apikey': SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({ email, password, nombre, apellidos, dni, telefono, rol })
       });
 
-      if (error) throw new Error(error.message || 'Error creando usuario');
-      if (data?.error) throw new Error(data.error);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error creando usuario');
 
       closeModal();
       showToast(`${nombre} ${apellidos} creado correctamente`);
