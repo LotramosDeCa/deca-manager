@@ -107,9 +107,14 @@ const App = {
       btn.classList.toggle('active', btn.dataset.view === view);
     });
 
-    // Resetear botón volver
-    backBtn.hidden = true;
-    backBtn.onclick = null;
+    // Botón volver: visible en todas las vistas excepto dashboard
+    if (view === 'dashboard') {
+      backBtn.hidden = true;
+      backBtn.onclick = null;
+    } else {
+      backBtn.hidden = false;
+      backBtn.onclick = () => this.navigate('dashboard');
+    }
 
     // Limpiar contenido antes de cargar la nueva vista
     content.innerHTML = '<div style="display:flex; justify-content:center; padding:40px;"><div class="spinner" style="width:32px; height:32px; border:3px solid #e5e7eb; border-top-color:#1a56db; border-radius:50%; animation:spin 0.8s linear infinite;"></div></div>';
