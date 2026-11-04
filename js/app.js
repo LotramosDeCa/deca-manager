@@ -117,7 +117,7 @@ const App = {
     }
 
     // Limpiar contenido antes de cargar la nueva vista
-    content.innerHTML = '<div style="display:flex; justify-content:center; padding:40px;"><div class="spinner" style="width:32px; height:32px; border:3px solid #e5e7eb; border-top-color:#1a56db; border-radius:50%; animation:spin 0.8s linear infinite;"></div></div>';
+    content.innerHTML = '<div style="display:flex; justify-content:center; padding:40px;"><div class="spinner" style="width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:spin 0.8s linear infinite;"></div></div>';
 
     try {
       switch (view) {
@@ -180,37 +180,55 @@ const App = {
     const isAdmin = Auth.isAdmin();
     const greeting = this.getGreeting();
 
+    const dateStr = new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+
     container.innerHTML = `
-      <div style="margin-bottom: 20px;">
-        <p style="font-size: 14px; color: var(--gray-500);">${greeting}</p>
-        <h3 style="font-size: 22px; font-weight: 700; color: var(--gray-900); margin-top: 2px;">
-          ${Auth.currentProfile.nombre}
-        </h3>
+      <div class="greeting">
+        <h3>${greeting} ${Auth.currentProfile.nombre}</h3>
+        <p>${dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}</p>
       </div>
       <div class="stats-grid">
-        <div class="stat-card stat-primary">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:var(--primary-soft); color:var(--primary);">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+          </div>
           <div class="stat-value" id="stat-activas">-</div>
           <div class="stat-label">DeCA activas</div>
         </div>
-        <div class="stat-card stat-success">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#dcfce7; color:#16a34a;">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg>
+          </div>
           <div class="stat-value" id="stat-finalizadas">-</div>
           <div class="stat-label">Finalizadas</div>
         </div>
         ${isAdmin ? `
-        <div class="stat-card stat-warning">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#fef3c7; color:#d97706;">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          </div>
           <div class="stat-value" id="stat-conductores">-</div>
           <div class="stat-label">Conductores</div>
         </div>
-        <div class="stat-card stat-danger">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#fee2e2; color:#dc2626;">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16,8 20,8 23,11 23,16 16,16 16,8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          </div>
           <div class="stat-value" id="stat-vehiculos">-</div>
           <div class="stat-label">Vehículos</div>
         </div>
         ` : `
-        <div class="stat-card stat-warning">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#fef3c7; color:#d97706;">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
           <div class="stat-value" id="stat-mes">-</div>
           <div class="stat-label">Este mes</div>
         </div>
-        <div class="stat-card stat-danger">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#fee2e2; color:#dc2626;">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </div>
           <div class="stat-value" id="stat-modificadas">-</div>
           <div class="stat-label">Modificadas</div>
         </div>
@@ -327,9 +345,9 @@ const App = {
     }
 
     container.innerHTML = decas.map(d => {
-      const estadoClass = {
-        activo: 'badge-info', finalizado: 'badge-success', modificado: 'badge-warning', anulado: 'badge-danger',
-      }[d.estado] || 'badge-info';
+      const dotColor = {
+        activo: 'var(--primary)', finalizado: '#16a34a', modificado: '#d97706', anulado: '#dc2626',
+      }[d.estado] || 'var(--primary)';
       const estadoLabel = {
         activo: 'Activa', finalizado: 'Finalizada', modificado: 'Modificada', anulado: 'Anulada',
       }[d.estado] || d.estado;
@@ -338,18 +356,13 @@ const App = {
         : '—';
 
       return `
-        <div class="list-card" style="cursor:pointer;" onclick="App.navigate('decas')">
-          <div class="list-card-icon" style="background:var(--primary-50); color:var(--primary);">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14,2 14,8 20,8"/>
-            </svg>
+        <div class="deca-item" style="cursor:pointer;" onclick="App.navigate('decas')">
+          <span class="deca-ref">${d.referencia || '—'}</span>
+          <div class="deca-info">
+            <strong>${d.origen || '?'} → ${d.destino || '?'}</strong>
+            <span>${fecha} · ${d.nombre_conductor || ''}</span>
           </div>
-          <div class="list-card-info">
-            <div class="name">${d.referencia || '—'}</div>
-            <div class="detail">${d.origen || '?'} → ${d.destino || '?'} · ${fecha}</div>
-          </div>
-          <span class="badge ${estadoClass}" style="font-size:10px;">${estadoLabel}</span>
+          <span class="deca-status" style="color:${dotColor};" title="${estadoLabel}">●</span>
         </div>
       `;
     }).join('');
