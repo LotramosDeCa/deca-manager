@@ -1233,8 +1233,7 @@ const Decas = {
 
   // ====== MODAL MOTIVO DE ANULACIÓN ======
   _showAnulacionModal(decaId) {
-    openModal(`
-      <h3 style="margin-bottom:12px; color:var(--danger);">Anular DeCA</h3>
+    showModal('Anular DeCA', `
       <p style="font-size:13px; color:var(--gray-600); margin-bottom:12px;">
         Introduce el motivo de anulación. Este motivo quedará reflejado en el PDF de la DeCA y es obligatorio por ley.
       </p>
@@ -1242,10 +1241,9 @@ const Decas = {
         <label for="motivo-anulacion">Motivo de anulación *</label>
         <textarea id="motivo-anulacion" rows="3" required placeholder="Ej: Error en los datos del destinatario, carga cancelada por el cliente..." style="width:100%; resize:vertical;"></textarea>
       </div>
-      <div style="display:flex; gap:8px; margin-top:16px;">
-        <button class="btn btn-secondary" style="flex:1;" onclick="closeModal()">Cancelar</button>
-        <button class="btn btn-primary" style="flex:1; background:var(--danger);" id="btn-confirmar-anulacion">Confirmar anulación</button>
-      </div>
+    `, `
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-danger" id="btn-confirmar-anulacion">Confirmar anulación</button>
     `);
 
     document.getElementById('btn-confirmar-anulacion').addEventListener('click', async () => {
