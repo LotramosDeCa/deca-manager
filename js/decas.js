@@ -177,6 +177,11 @@ const Decas = {
           <span class="badge ${estadoClass}">${estadoLabel}</span>
           ${d.version > 1 ? `<span class="badge badge-info">Version ${d.version}</span>` : ''}
         </div>
+        ${d.estado === 'anulado' && d.motivo_anulacion ? `
+        <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:10px;">
+          <span style="font-size:11px; color:var(--danger); font-weight:600;">Motivo de anulación</span>
+          <p style="font-size:13px; margin-top:2px;">${d.motivo_anulacion}</p>
+        </div>` : ''}
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
           <div>
@@ -387,12 +392,21 @@ const Decas = {
 
         <div class="form-row">
           <div class="form-group">
-            <label for="deca-peso">Peso (kg) *</label>
-            <input type="number" id="deca-peso" min="0" step="0.01" required placeholder="0">
+            <label for="deca-cantidad">Cantidad *</label>
+            <input type="number" id="deca-cantidad" min="0" step="0.01" required placeholder="0">
           </div>
           <div class="form-group">
-            <label for="deca-bultos">Bultos</label>
-            <input type="number" id="deca-bultos" min="0" placeholder="0">
+            <label for="deca-unidad">Unidad *</label>
+            <select id="deca-unidad" required>
+              <option value="">Seleccionar</option>
+              <option value="kg">Kilogramos (kg)</option>
+              <option value="toneladas">Toneladas</option>
+              <option value="litros">Litros</option>
+              <option value="m³">Metros cúbicos (m³)</option>
+              <option value="palets">Palets</option>
+              <option value="unidades">Unidades</option>
+              <option value="bultos">Bultos</option>
+            </select>
           </div>
         </div>
 
@@ -470,8 +484,8 @@ const Decas = {
       origen: document.getElementById('deca-origen').value.trim(),
       destino: document.getElementById('deca-destino').value.trim(),
       descripcion_mercancia: this._getMercanciaValue(),
-      peso: document.getElementById('deca-peso').value ? parseFloat(document.getElementById('deca-peso').value) : null,
-      bultos: document.getElementById('deca-bultos').value ? parseInt(document.getElementById('deca-bultos').value) : null,
+      cantidad: document.getElementById('deca-cantidad').value ? parseFloat(document.getElementById('deca-cantidad').value) : null,
+      unidad: document.getElementById('deca-unidad').value || null,
       // Cargador
       cargador_id: cargadorSelect.value,
       nombre_cargador: cargadorOption?.dataset.nombre || '',
@@ -536,12 +550,8 @@ const Decas = {
             <p style="font-size:13px; font-weight:500;">${r.descripcion_mercancia}</p>
           </div>
           <div>
-            <span style="font-size:11px; color:var(--gray-500);">Peso</span>
-            <p style="font-size:13px; font-weight:500;">${r.peso ? Number(r.peso).toLocaleString('es-ES') + ' kg' : '—'}</p>
-          </div>
-          <div>
-            <span style="font-size:11px; color:var(--gray-500);">Bultos</span>
-            <p style="font-size:13px; font-weight:500;">${r.bultos || '—'}</p>
+            <span style="font-size:11px; color:var(--gray-500);">Cantidad</span>
+            <p style="font-size:13px; font-weight:500;">${r.cantidad ? Number(r.cantidad).toLocaleString('es-ES') + ' ' + (r.unidad || '') : '—'}</p>
           </div>
         </div>
 
@@ -611,8 +621,8 @@ const Decas = {
         origen: r.origen,
         destino: r.destino,
         descripcion_mercancia: r.descripcion_mercancia,
-        peso: r.peso,
-        bultos: r.bultos,
+        cantidad: r.cantidad,
+        unidad: r.unidad,
         // Cargador
         cargador_id: r.cargador_id,
         nombre_cargador: r.nombre_cargador,
@@ -869,12 +879,21 @@ const Decas = {
 
         <div class="form-row">
           <div class="form-group">
-            <label for="deca-peso">Peso (kg) *</label>
-            <input type="number" id="deca-peso" min="0" step="0.01" required placeholder="0" value="${deca.peso || ''}">
+            <label for="deca-cantidad">Cantidad *</label>
+            <input type="number" id="deca-cantidad" min="0" step="0.01" required placeholder="0" value="${deca.cantidad || deca.peso || ''}">
           </div>
           <div class="form-group">
-            <label for="deca-bultos">Bultos</label>
-            <input type="number" id="deca-bultos" min="0" placeholder="0" value="${deca.bultos || ''}">
+            <label for="deca-unidad">Unidad *</label>
+            <select id="deca-unidad" required>
+              <option value="">Seleccionar</option>
+              <option value="kg">Kilogramos (kg)</option>
+              <option value="toneladas">Toneladas</option>
+              <option value="litros">Litros</option>
+              <option value="m³">Metros cúbicos (m³)</option>
+              <option value="palets">Palets</option>
+              <option value="unidades">Unidades</option>
+              <option value="bultos">Bultos</option>
+            </select>
           </div>
         </div>
 
@@ -934,6 +953,13 @@ const Decas = {
     const setMercancia = document.getElementById('deca-mercancia');
     if (deca.descripcion_mercancia && setMercancia) setMercancia.value = deca.descripcion_mercancia;
 
+    // Pre-seleccionar unidad
+    const setUnidad = document.getElementById('deca-unidad');
+    if (setUnidad) {
+      const unidadVal = deca.unidad || (deca.peso ? 'kg' : '');
+      if (unidadVal) setUnidad.value = unidadVal;
+    }
+
     document.getElementById('deca-form-submit').addEventListener('click', () => this.previsualizarEdicion(decaId));
     this._setupMercanciaSelector();
   },
@@ -965,8 +991,8 @@ const Decas = {
       origen: document.getElementById('deca-origen').value.trim(),
       destino: document.getElementById('deca-destino').value.trim(),
       descripcion_mercancia: this._getMercanciaValue(),
-      peso: document.getElementById('deca-peso').value ? parseFloat(document.getElementById('deca-peso').value) : null,
-      bultos: document.getElementById('deca-bultos').value ? parseInt(document.getElementById('deca-bultos').value) : null,
+      cantidad: document.getElementById('deca-cantidad').value ? parseFloat(document.getElementById('deca-cantidad').value) : null,
+      unidad: document.getElementById('deca-unidad').value || null,
       cargador_id: cargadorSelect.value,
       nombre_cargador: cargadorOption?.dataset.nombre || '',
       nif_cargador: cargadorOption?.dataset.nif || '',
@@ -997,8 +1023,8 @@ const Decas = {
       { key: 'origen', label: 'Lugar de carga' },
       { key: 'destino', label: 'Lugar de descarga' },
       { key: 'descripcion_mercancia', label: 'Mercancia' },
-      { key: 'peso', label: 'Peso (kg)' },
-      { key: 'bultos', label: 'Bultos' },
+      { key: 'cantidad', label: 'Cantidad' },
+      { key: 'unidad', label: 'Unidad' },
       { key: 'nombre_conductor', label: 'Conductor' },
       { key: 'dni_conductor', label: 'DNI Conductor' },
       { key: 'matricula_vehiculo', label: 'Vehiculo' },
@@ -1120,8 +1146,8 @@ const Decas = {
         origen: newData.origen,
         destino: newData.destino,
         descripcion_mercancia: newData.descripcion_mercancia,
-        peso: newData.peso,
-        bultos: newData.bultos,
+        cantidad: newData.cantidad,
+        unidad: newData.unidad,
         cargador_id: newData.cargador_id,
         nombre_cargador: newData.nombre_cargador,
         nif_cargador: newData.nif_cargador,
@@ -1179,6 +1205,12 @@ const Decas = {
     const labels = { finalizado: 'finalizar', anulado: 'anular' };
     const label = labels[nuevoEstado] || nuevoEstado;
 
+    // Si es anulación, pedir motivo obligatorio
+    if (nuevoEstado === 'anulado') {
+      this._showAnulacionModal(decaId);
+      return;
+    }
+
     confirmAction(`¿Seguro que quieres ${label} esta DeCA? Esta acción no se puede deshacer.`, async () => {
       try {
         const updates = { estado: nuevoEstado };
@@ -1190,7 +1222,50 @@ const Decas = {
 
         if (error) throw new Error(error.message);
 
-        showToast(`DeCA ${nuevoEstado === 'finalizado' ? 'finalizada' : 'anulada'}`);
+        showToast('DeCA finalizada');
+        closeModal();
+        await this.loadDecas();
+      } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+      }
+    });
+  },
+
+  // ====== MODAL MOTIVO DE ANULACIÓN ======
+  _showAnulacionModal(decaId) {
+    openModal(`
+      <h3 style="margin-bottom:12px; color:var(--danger);">Anular DeCA</h3>
+      <p style="font-size:13px; color:var(--gray-600); margin-bottom:12px;">
+        Introduce el motivo de anulación. Este motivo quedará reflejado en el PDF de la DeCA y es obligatorio por ley.
+      </p>
+      <div class="form-group">
+        <label for="motivo-anulacion">Motivo de anulación *</label>
+        <textarea id="motivo-anulacion" rows="3" required placeholder="Ej: Error en los datos del destinatario, carga cancelada por el cliente..." style="width:100%; resize:vertical;"></textarea>
+      </div>
+      <div style="display:flex; gap:8px; margin-top:16px;">
+        <button class="btn btn-secondary" style="flex:1;" onclick="closeModal()">Cancelar</button>
+        <button class="btn btn-primary" style="flex:1; background:var(--danger);" id="btn-confirmar-anulacion">Confirmar anulación</button>
+      </div>
+    `);
+
+    document.getElementById('btn-confirmar-anulacion').addEventListener('click', async () => {
+      const motivo = document.getElementById('motivo-anulacion').value.trim();
+      if (!motivo) {
+        showToast('El motivo de anulación es obligatorio', 'error');
+        document.getElementById('motivo-anulacion').focus();
+        return;
+      }
+
+      try {
+        const updates = {
+          estado: 'anulado',
+          motivo_anulacion: motivo,
+        };
+
+        const { error } = await sbUpdate('decas', 'id=eq.' + decaId, updates);
+        if (error) throw new Error(error.message);
+
+        showToast('DeCA anulada');
         closeModal();
         await this.loadDecas();
       } catch (err) {
@@ -1409,8 +1484,8 @@ const Decas = {
       y += 8;
       row('Naturaleza de la mercancia', d.descripcion_mercancia, col1, cw - 6);
       y += 8;
-      row('Peso (kg)', d.peso ? Number(d.peso).toLocaleString('es-ES') + ' kg' : '--', col1, halfW);
-      row('Bultos', d.bultos || '--', col2, halfW);
+      const cantidadStr = d.cantidad ? Number(d.cantidad).toLocaleString('es-ES') + (d.unidad ? ' ' + d.unidad : '') : (d.peso ? Number(d.peso).toLocaleString('es-ES') + ' kg' : '--');
+      row('Cantidad', cantidadStr, col1, halfW);
       y += 8;
       row('N. expedicion', d.num_expedicion || d.referencia || '--', col1, halfW);
       y += 12;
@@ -1443,6 +1518,37 @@ const Decas = {
         }
       }
 
+      // ========== ANULACIÓN (si estado anulado) ==========
+      if (d.estado === 'anulado') {
+        // Marca de agua diagonal ANULADA
+        doc.saveGraphicsState();
+        doc.setGState(new doc.GState({ opacity: 0.15 }));
+        doc.setTextColor(220, 40, 40);
+        doc.setFontSize(60);
+        doc.setFont('helvetica', 'bold');
+        doc.text('ANULADA', pw / 2, 150, { align: 'center', angle: 45 });
+        doc.restoreGraphicsState();
+
+        // Bloque motivo de anulación
+        if (d.motivo_anulacion) {
+          y += 46; // después del QR
+          if (y > 240) { doc.addPage(); y = 20; }
+          doc.setFillColor(220, 40, 40);
+          doc.rect(m, y, cw, 7, 'F');
+          doc.setTextColor(...WHITE);
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.text('MOTIVO DE ANULACION', m + 3, y + 5);
+          y += 10;
+          doc.setTextColor(...DARK);
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'normal');
+          const motivoLines = doc.splitTextToSize(d.motivo_anulacion, cw - 6);
+          doc.text(motivoLines, m + 3, y);
+          y += motivoLines.length * 5 + 4;
+        }
+      }
+
       // ========== DATOS CORREGIDOS (si version > 1) ==========
       if (d.version && d.version > 1) {
         try {
@@ -1457,7 +1563,7 @@ const Decas = {
               nif_destinatario: 'NIF Destinatario', direccion_destinatario: 'Dir. Destinatario',
               fecha_transporte: 'Fecha transporte', hora_carga: 'Hora carga',
               origen: 'Lugar de carga', destino: 'Lugar de descarga',
-              descripcion_mercancia: 'Mercancia', peso: 'Peso (kg)', bultos: 'Bultos',
+              descripcion_mercancia: 'Mercancia', cantidad: 'Cantidad', unidad: 'Unidad',
               nombre_conductor: 'Conductor', dni_conductor: 'DNI Conductor',
               matricula_vehiculo: 'Vehiculo', matricula_remolque: 'Remolque',
             };
