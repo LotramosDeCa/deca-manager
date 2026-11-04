@@ -22,12 +22,10 @@ const Decas = {
     container.innerHTML = `
       <div class="section-header">
         <h3>${isAdmin ? 'Todas las DeCA' : 'Mis DeCA'}</h3>
-        ${isAdmin ? `
         <button class="btn btn-primary btn-sm" id="btn-crear-deca">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Nueva DeCA
         </button>
-        ` : ''}
       </div>
       <div class="search-inline" style="margin-bottom:12px;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -40,9 +38,7 @@ const Decas = {
       </div>
     `;
 
-    if (isAdmin) {
-      document.getElementById('btn-crear-deca')?.addEventListener('click', () => this.showForm());
-    }
+    document.getElementById('btn-crear-deca')?.addEventListener('click', () => this.showForm());
 
     document.getElementById('deca-search').addEventListener('input', (e) => {
       this._searchQuery = e.target.value.trim().toLowerCase();
@@ -234,12 +230,8 @@ const Decas = {
             <p style="font-size:13px; font-weight:500;">${d.descripcion_mercancia || '—'}</p>
           </div>
           <div>
-            <span style="font-size:11px; color:var(--gray-500);">Peso (kg)</span>
-            <p style="font-size:13px; font-weight:500;">${d.peso ? Number(d.peso).toLocaleString('es-ES') : '—'}</p>
-          </div>
-          <div>
-            <span style="font-size:11px; color:var(--gray-500);">Bultos</span>
-            <p style="font-size:13px; font-weight:500;">${d.bultos || '—'}</p>
+            <span style="font-size:11px; color:var(--gray-500);">Cantidad</span>
+            <p style="font-size:13px; font-weight:500;">${d.cantidad ? Number(d.cantidad).toLocaleString('es-ES') + (d.unidad ? ' ' + d.unidad : '') : (d.peso ? Number(d.peso).toLocaleString('es-ES') + ' kg' : '—')}</p>
           </div>
         </div>
 
@@ -304,11 +296,12 @@ const Decas = {
     closeModal();
 
     // Cargar vehículos, remolques, conductores y clientes en paralelo
-    const [vehiculos, remolques, conductores, clientesRes] = await Promise.all([
+    const [vehiculos, remolques, conductores, clientesRes, mercanciasRes] = await Promise.all([
       sbSelect('vehiculos', 'select=id,matricula,marca,modelo&activo=eq.true&order=matricula.asc'),
       sbSelect('remolques', 'select=id,matricula,marca,modelo&activo=eq.true&order=matricula.asc'),
       sbSelect('profiles', 'select=id,user_id,nombre,apellidos,dni&activo=eq.true&rol=eq.conductor&order=nombre.asc'),
       sbSelect('clientes', 'select=id,nombre,nif,direccion,poblacion,codigo_postal,provincia&activo=eq.true&order=nombre.asc'),
+      sbSelect('mercancias', 'select=id,nombre&activo=eq.true&order=nombre.asc'),
     ]);
 
     this.vehiculosActivos = vehiculos.data || [];
@@ -321,6 +314,11 @@ const Decas = {
     const todosConductores = [...conductoresActivos, ...(admins.data || [])];
 
     const hoy = new Date().toISOString().split('T')[0];
+
+    // Construir opciones de mercancías predefinidas
+    const mercanciaOptions = (mercanciasRes.data || []).map(m =>
+      `<option value="${m.nombre}">${m.nombre}</option>`
+    ).join('');
 
     // Construir opciones de clientes con data-* para copiar datos al registro
     const clienteOptions = this._clientesActivos.map(c => {
@@ -376,7 +374,15 @@ const Decas = {
 
         <div class="form-group">
           <label for="deca-mercancia">Naturaleza de la mercancia *</label>
-          <input type="text" id="deca-mercancia" required placeholder="Ej: Material de construcción">
+          <select id="deca-mercancia" required>
+            <option value="">Seleccionar mercancia</option>
+            ${mercanciaOptions}
+            <option value="__nueva__">+ Añadir nueva...</option>
+          </select>
+          <div id="nueva-mercancia-box" hidden style="margin-top:6px; display:flex; gap:6px; align-items:center;">
+            <input type="text" id="nueva-mercancia-input" placeholder="Nombre de la mercancia" style="flex:1;">
+            <button type="button" class="btn btn-primary btn-sm" id="btn-guardar-mercancia" style="white-space:nowrap; padding:6px 12px;">Guardar</button>
+          </div>
         </div>
 
         <div class="form-row">
@@ -430,6 +436,7 @@ const Decas = {
     `);
 
     document.getElementById('deca-form-submit').addEventListener('click', () => this.previsualizarDeca());
+    this._setupMercanciaSelector();
   },
 
   // ====== PREVISUALIZAR ANTES DE CREAR ======
@@ -462,7 +469,7 @@ const Decas = {
       hora_carga: horaCarga,
       origen: document.getElementById('deca-origen').value.trim(),
       destino: document.getElementById('deca-destino').value.trim(),
-      descripcion_mercancia: document.getElementById('deca-mercancia').value.trim(),
+      descripcion_mercancia: this._getMercanciaValue(),
       peso: document.getElementById('deca-peso').value ? parseFloat(document.getElementById('deca-peso').value) : null,
       bultos: document.getElementById('deca-bultos').value ? parseInt(document.getElementById('deca-bultos').value) : null,
       // Cargador
@@ -769,11 +776,12 @@ const Decas = {
     this._editOriginal = { ...deca };
 
     // Cargar listas en paralelo
-    const [vehiculos, remolques, conductores, clientesRes] = await Promise.all([
+    const [vehiculos, remolques, conductores, clientesRes, mercanciasRes] = await Promise.all([
       sbSelect('vehiculos', 'select=id,matricula,marca,modelo&activo=eq.true&order=matricula.asc'),
       sbSelect('remolques', 'select=id,matricula,marca,modelo&activo=eq.true&order=matricula.asc'),
       sbSelect('profiles', 'select=id,user_id,nombre,apellidos,dni&activo=eq.true&rol=eq.conductor&order=nombre.asc'),
       sbSelect('clientes', 'select=id,nombre,nif,direccion,poblacion,codigo_postal,provincia&activo=eq.true&order=nombre.asc'),
+      sbSelect('mercancias', 'select=id,nombre&activo=eq.true&order=nombre.asc'),
     ]);
 
     this.vehiculosActivos = vehiculos.data || [];
@@ -783,6 +791,12 @@ const Decas = {
 
     const admins = await sbSelect('profiles', 'select=id,user_id,nombre,apellidos,dni&activo=eq.true&rol=eq.admin&order=nombre.asc');
     const todosConductores = [...conductoresActivos, ...(admins.data || [])];
+
+    // Construir opciones de mercancías (incluir valor actual si no está en la lista)
+    const mercList = (mercanciasRes.data || []);
+    const mercExiste = deca.descripcion_mercancia && !mercList.find(m => m.nombre === deca.descripcion_mercancia);
+    const mercanciaOptions = (mercExiste ? `<option value="${deca.descripcion_mercancia}">${deca.descripcion_mercancia}</option>` : '') +
+      mercList.map(m => `<option value="${m.nombre}">${m.nombre}</option>`).join('');
 
     // Construir opciones con pre-selección
     const clienteOptions = this._clientesActivos.map(c => {
@@ -842,7 +856,15 @@ const Decas = {
 
         <div class="form-group">
           <label for="deca-mercancia">Naturaleza de la mercancia *</label>
-          <input type="text" id="deca-mercancia" required placeholder="Ej: Material de construcción" value="${deca.descripcion_mercancia || ''}">
+          <select id="deca-mercancia" required>
+            <option value="">Seleccionar mercancia</option>
+            ${mercanciaOptions}
+            <option value="__nueva__">+ Añadir nueva...</option>
+          </select>
+          <div id="nueva-mercancia-box" hidden style="margin-top:6px; display:flex; gap:6px; align-items:center;">
+            <input type="text" id="nueva-mercancia-input" placeholder="Nombre de la mercancia" style="flex:1;">
+            <button type="button" class="btn btn-primary btn-sm" id="btn-guardar-mercancia" style="white-space:nowrap; padding:6px 12px;">Guardar</button>
+          </div>
         </div>
 
         <div class="form-row">
@@ -908,7 +930,12 @@ const Decas = {
     if (deca.vehiculo_id && setVehiculo) setVehiculo.value = deca.vehiculo_id;
     if (deca.remolque_id && setRemolque) setRemolque.value = deca.remolque_id;
 
+    // Pre-seleccionar mercancía
+    const setMercancia = document.getElementById('deca-mercancia');
+    if (deca.descripcion_mercancia && setMercancia) setMercancia.value = deca.descripcion_mercancia;
+
     document.getElementById('deca-form-submit').addEventListener('click', () => this.previsualizarEdicion(decaId));
+    this._setupMercanciaSelector();
   },
 
   // ====== PREVISUALIZAR CAMBIOS ANTES DE GUARDAR ======
@@ -937,7 +964,7 @@ const Decas = {
       hora_carga: document.getElementById('deca-hora-carga').value || null,
       origen: document.getElementById('deca-origen').value.trim(),
       destino: document.getElementById('deca-destino').value.trim(),
-      descripcion_mercancia: document.getElementById('deca-mercancia').value.trim(),
+      descripcion_mercancia: this._getMercanciaValue(),
       peso: document.getElementById('deca-peso').value ? parseFloat(document.getElementById('deca-peso').value) : null,
       bultos: document.getElementById('deca-bultos').value ? parseInt(document.getElementById('deca-bultos').value) : null,
       cargador_id: cargadorSelect.value,
@@ -1170,6 +1197,63 @@ const Decas = {
         showToast('Error: ' + err.message, 'error');
       }
     });
+  },
+
+  // ====== HELPER: Obtener valor de mercancía del formulario ======
+  _getMercanciaValue() {
+    const select = document.getElementById('deca-mercancia');
+    if (!select) return '';
+    if (select.value === '__nueva__') {
+      const input = document.getElementById('nueva-mercancia-input');
+      return input ? input.value.trim() : '';
+    }
+    return select.value;
+  },
+
+  // ====== HELPER: Setup selector mercancía con "Añadir nueva" ======
+  _setupMercanciaSelector() {
+    const select = document.getElementById('deca-mercancia');
+    if (!select) return;
+
+    select.addEventListener('change', () => {
+      const box = document.getElementById('nueva-mercancia-box');
+      if (select.value === '__nueva__') {
+        box.hidden = false;
+        document.getElementById('nueva-mercancia-input').focus();
+        select.setCustomValidity('Guarda la nueva mercancia o selecciona una existente');
+      } else {
+        box.hidden = true;
+        select.setCustomValidity('');
+      }
+    });
+
+    const btnGuardar = document.getElementById('btn-guardar-mercancia');
+    if (btnGuardar) {
+      btnGuardar.addEventListener('click', async () => {
+        const input = document.getElementById('nueva-mercancia-input');
+        const nombre = input.value.trim();
+        if (!nombre) { input.focus(); return; }
+
+        try {
+          const { error } = await sbInsert('mercancias', { nombre });
+          if (error) throw new Error(error.message);
+
+          // Añadir al select antes de "Añadir nueva..."
+          const addNewOpt = select.querySelector('option[value="__nueva__"]');
+          const newOpt = document.createElement('option');
+          newOpt.value = nombre;
+          newOpt.textContent = nombre;
+          select.insertBefore(newOpt, addNewOpt);
+          select.value = nombre;
+          select.setCustomValidity('');
+          document.getElementById('nueva-mercancia-box').hidden = true;
+          input.value = '';
+          showToast('Mercancia guardada');
+        } catch (err) {
+          showToast('Error: ' + err.message, 'error');
+        }
+      });
+    }
   },
 
   async _generarPDFConDatos(d) {
