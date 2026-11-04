@@ -336,8 +336,8 @@
       y += 8;
       row('Naturaleza de la mercancia', d.descripcion_mercancia, col1, cw - 6);
       y += 8;
-      row('Peso (kg)', d.peso ? Number(d.peso).toLocaleString('es-ES') + ' kg' : '--', col1, halfW);
-      row('Bultos', d.bultos || '--', col2, halfW);
+      const cantidadStr = d.cantidad ? Number(d.cantidad).toLocaleString('es-ES') + (d.unidad ? ' ' + d.unidad : '') : (d.peso ? Number(d.peso).toLocaleString('es-ES') + ' kg' : '--');
+      row('Cantidad', cantidadStr, col1, halfW);
       y += 8;
       row('N. expedicion', d.num_expedicion || d.referencia || '--', col1, halfW);
       y += 12;
@@ -368,6 +368,35 @@
         } catch (e) { console.warn('QR error:', e); }
       }
 
+      // ========== ANULACIÓN (si estado anulado) ==========
+      if (d.estado === 'anulado') {
+        doc.saveGraphicsState();
+        doc.setGState(new doc.GState({ opacity: 0.15 }));
+        doc.setTextColor(220, 40, 40);
+        doc.setFontSize(60);
+        doc.setFont('helvetica', 'bold');
+        doc.text('ANULADA', pw / 2, 150, { align: 'center', angle: 45 });
+        doc.restoreGraphicsState();
+
+        if (d.motivo_anulacion) {
+          y += 46;
+          if (y > 240) { doc.addPage(); y = 20; }
+          doc.setFillColor(220, 40, 40);
+          doc.rect(m, y, cw, 7, 'F');
+          doc.setTextColor(...WHITE);
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.text('MOTIVO DE ANULACION', m + 3, y + 5);
+          y += 10;
+          doc.setTextColor(...DARK);
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'normal');
+          const motivoLines = doc.splitTextToSize(d.motivo_anulacion, cw - 6);
+          doc.text(motivoLines, m + 3, y);
+          y += motivoLines.length * 5 + 4;
+        }
+      }
+
       // ========== DATOS CORREGIDOS (si version > 1) ==========
       if (d.version && d.version > 1) {
         try {
@@ -384,7 +413,7 @@
               nif_destinatario: 'NIF Destinatario', direccion_destinatario: 'Dir. Destinatario',
               fecha_transporte: 'Fecha transporte', hora_carga: 'Hora carga',
               origen: 'Lugar de carga', destino: 'Lugar de descarga',
-              descripcion_mercancia: 'Mercancia', peso: 'Peso (kg)', bultos: 'Bultos',
+              descripcion_mercancia: 'Mercancia', cantidad: 'Cantidad', unidad: 'Unidad',
               nombre_conductor: 'Conductor', dni_conductor: 'DNI Conductor',
               matricula_vehiculo: 'Vehiculo', matricula_remolque: 'Remolque',
             };
