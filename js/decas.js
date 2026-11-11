@@ -1176,6 +1176,10 @@ const Decas = {
       showToast(`DeCA ${orig.referencia} actualizada (v${nuevaVersion})`);
       await this.loadDecas();
 
+      // Enviar versión modificada por email en segundo plano
+      const decaActualizada = this.list.find(x => x.id === decaId);
+      if (decaActualizada) this._enviarPorEmail(decaActualizada);
+
     } catch (err) {
       console.error('[DeCA] Error editando:', err);
       if (errorEl && errorEl.isConnected) {
