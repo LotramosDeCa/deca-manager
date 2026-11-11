@@ -654,6 +654,9 @@ const Decas = {
       await this.loadDecas();
       console.log('[DeCA] Lista recargada OK');
 
+      // Enviar por email en segundo plano (no bloquea)
+      if (data) this._enviarPorEmail(data);
+
     } catch (err) {
       console.error('[DeCA] Error creando:', err);
       const modal = document.getElementById('modal-overlay');
@@ -1619,13 +1622,65 @@ const Decas = {
         doc.text(`Ref: ${d.referencia} | Pag. ${p}/${totalPages} | Conforme a Orden TRM/282/2026`, pw - m, footerY + 4, { align: 'right' });
       }
 
-      // ========== DESCARGAR ==========
-      doc.save(`${d.referencia || 'DeCA'}.pdf`);
-      showToast('PDF generado correctamente');
+      // ========== DESCARGAR (si no es solo para email) ==========
+      if (!d._soloEmail) {
+        doc.save(`${d.referencia || 'DeCA'}.pdf`);
+        showToast('PDF generado correctamente');
+      }
+
+      return doc;
 
     } catch (err) {
       console.error('Error generando PDF:', err);
       showToast('Error generando PDF', 'error');
+      return null;
+    }
+  },
+
+  // ====== ENVIAR DECA POR EMAIL ======
+  async _enviarPorEmail(d) {
+    try {
+      // Generar PDF en memoria (sin descargar)
+      if (typeof window.jspdf === 'undefined') {
+        await new Promise(r => setTimeout(r, 1000));
+        if (typeof window.jspdf === 'undefined') return;
+      }
+
+      const docData = { ...d, _soloEmail: true };
+      const doc = await this._generarPDFConDatos(docData);
+      if (!doc) return;
+
+      // Convertir a base64
+      const pdfBase64 = doc.output('datauristring').split(',')[1];
+
+      const fecha = d.fecha_transporte
+        ? new Date(d.fecha_transporte).toLocaleDateString('es-ES')
+        : '';
+
+      const res = await fetch(SUPABASE_URL + '/functions/v1/send-deca-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + sbToken(),
+          'apikey': SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({
+          pdfBase64,
+          referencia: d.referencia,
+          origen: d.origen,
+          destino: d.destino,
+          fecha,
+          matricula: d.matricula_vehiculo
+        })
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Error enviando email');
+
+      showToast('📧 DeCA enviada por email');
+    } catch (err) {
+      console.error('Error enviando email:', err);
+      showToast('DeCA creada, pero falló el envío por email', 'warning');
     }
   },
 };
