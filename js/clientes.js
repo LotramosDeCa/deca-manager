@@ -90,21 +90,21 @@ const Clientes = {
     }
 
     container.innerHTML = filtered.map(c => {
-      const icon = '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="var(--primary)" stroke-width="1.5"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="2" y1="9" x2="22" y2="9"/><line x1="8" y1="3" x2="8" y2="9"/></svg>';
-
       return `
-        <div class="list-card" data-id="${c.id}">
-          <div class="list-card-icon">${icon}</div>
-          <div class="list-card-info">
-            <div class="name">${c.nombre}</div>
-            <div class="detail">${c.nif || 'Sin NIF'}${c.poblacion ? ' · ' + c.poblacion : ''}</div>
+        <div class="user-card" data-id="${c.id}">
+          <div class="user-avatar" style="background:var(--primary-soft); color:var(--primary);">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="2" y1="9" x2="22" y2="9"/><line x1="8" y1="3" x2="8" y2="9"/></svg>
+          </div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-weight:600; color:var(--fg);">${c.nombre}</div>
+            <div style="font-size:13px; color:var(--fg-secondary);">${c.nif || 'Sin NIF'}${c.poblacion ? ' · ' + c.poblacion : ''}</div>
           </div>
           <span class="badge badge-${c.activo ? 'activo' : 'inactivo'}">${c.activo ? 'Activo' : 'Inactivo'}</span>
         </div>
       `;
     }).join('');
 
-    container.querySelectorAll('.list-card').forEach(card => {
+    container.querySelectorAll('.user-card').forEach(card => {
       card.addEventListener('click', () => {
         const c = this.list.find(x => x.id === card.dataset.id);
         if (c) this.showDetail(c);
