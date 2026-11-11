@@ -68,18 +68,18 @@ const Usuarios = {
       const isCurrentUser = user.user_id === Auth.currentUser.id;
 
       return `
-        <div class="list-card" data-id="${user.id}">
-          <div class="list-card-avatar avatar-${user.rol}">${initials}</div>
-          <div class="list-card-info">
-            <div class="name">${user.nombre} ${user.apellidos} ${isCurrentUser ? '<span style="color:var(--gray-400)">(tú)</span>' : ''}</div>
-            <div class="detail">${user.email || 'Sin email'} · ${user.dni || 'Sin DNI'}</div>
+        <div class="user-card" data-id="${user.id}">
+          <div class="user-avatar avatar-${user.rol}">${initials}</div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-weight:600; color:var(--fg);">${user.nombre} ${user.apellidos} ${isCurrentUser ? '<span style="color:var(--fg-muted)">(tú)</span>' : ''}</div>
+            <div style="font-size:13px; color:var(--fg-secondary);">${user.email || 'Sin email'} · ${user.dni || 'Sin DNI'}</div>
           </div>
           <span class="badge badge-${user.activo ? 'activo' : 'inactivo'}">${user.activo ? user.rol : 'Inactivo'}</span>
         </div>
       `;
     }).join('');
 
-    container.querySelectorAll('.list-card').forEach(card => {
+    container.querySelectorAll('.user-card').forEach(card => {
       card.addEventListener('click', () => {
         const user = this.list.find(u => u.id === card.dataset.id);
         if (user) this.showDetail(user);
