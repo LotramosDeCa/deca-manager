@@ -131,18 +131,18 @@ const Flota = {
       const icon = isVehiculo ? this.getVehiculoIcon(item.tipo) : this.getRemolqueIcon(item.tipo);
 
       return `
-        <div class="list-card" data-id="${item.id}">
-          <div class="list-card-icon">${icon}</div>
-          <div class="list-card-info">
-            <div class="name">${item.matricula}</div>
-            <div class="detail">${tipoLabel}${item.marca ? ' · ' + item.marca : ''}${item.modelo ? ' ' + item.modelo : ''}</div>
+        <div class="vehicle-card" data-id="${item.id}">
+          <div class="vehicle-plate">${item.matricula}</div>
+          <div style="flex:1; min-width:0;">
+            <div class="vehicle-tag">${tipoLabel}</div>
+            <div style="font-size:13px; color:var(--fg-secondary);">${item.marca ? item.marca : ''}${item.modelo ? ' ' + item.modelo : ''}</div>
           </div>
           <span class="badge badge-${item.activo ? 'activo' : 'inactivo'}">${item.activo ? 'Activo' : 'Inactivo'}</span>
         </div>
       `;
     }).join('');
 
-    container.querySelectorAll('.list-card').forEach(card => {
+    container.querySelectorAll('.vehicle-card').forEach(card => {
       card.addEventListener('click', () => {
         const item = (isVehiculo ? this.vehiculos : this.remolques).find(i => i.id === card.dataset.id);
         if (item) this.showDetail(item);
