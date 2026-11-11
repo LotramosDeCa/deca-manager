@@ -361,13 +361,13 @@ body {
   position: sticky;
   top: 0;
   z-index: 100;
-  height: var(--header-height);
+  min-height: var(--header-height);
   background: var(--header-bg);
   color: var(--header-fg);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  padding: env(safe-area-inset-top, 0px) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px));
 }
 .header-left, .header-right {
   display: flex;
@@ -420,8 +420,8 @@ body {
 /* ====== DROPDOWN MENU ====== */
 .dropdown-menu {
   position: fixed;
-  top: var(--header-height);
-  right: 8px;
+  top: calc(var(--header-height) + env(safe-area-inset-top, 0px));
+  right: max(8px, env(safe-area-inset-right, 0px));
   background: var(--bg-card);
   border-radius: var(--radius);
   box-shadow: var(--shadow-lg);
