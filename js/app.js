@@ -237,11 +237,6 @@ const App = {
         </div>
         `}
       </div>
-      ${isAdmin ? `
-      <div id="dashboard-alertas-caducidad">
-        <div class="skeleton" style="height:60px; margin-bottom:8px; border-radius:10px;"></div>
-      </div>
-      ` : ''}
       <div class="section-header">
         <h3>Últimas DeCA</h3>
       </div>
@@ -297,9 +292,8 @@ const App = {
         const finalizadas = allDecas.filter(d => d.estado === 'finalizado').length;
         const ultimas = allDecas.slice(0, 5);
 
-        const profiles = await dashFetch('/profiles?select=id,nombre,apellidos,rol,fecha_cap,fecha_carnet&activo=eq.true') || [];
-        const vehiculos = await dashFetch('/vehiculos?select=id,matricula,fecha_itv,fecha_seguro,fecha_tarjeta_transporte&activo=eq.true') || [];
-        const remolques = await dashFetch('/remolques?select=id,matricula,fecha_itv,fecha_seguro&activo=eq.true') || [];
+        const profiles = await dashFetch('/profiles?select=id&activo=eq.true') || [];
+        const vehiculos = await dashFetch('/vehiculos?select=id&activo=eq.true') || [];
 
         const el = document.getElementById('stat-activas');
         if (!el) return;
@@ -308,7 +302,6 @@ const App = {
         document.getElementById('stat-conductores').textContent = profiles.length;
         document.getElementById('stat-vehiculos').textContent = vehiculos.length;
         this.renderUltimasDeCA(ultimas);
-        this.renderAlertasCaducidad(vehiculos, remolques, profiles);
 
       } else {
         const pid = Auth.currentProfile.id;
@@ -484,79 +477,6 @@ const App = {
     showModal('🔔 Alertas de caducidad', `
       <div style="max-height:60vh; overflow-y:auto;">${listHTML}</div>
     `, '<button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>');
-  },
-
-  // ====== ALERTAS DE CADUCIDAD (Dashboard admin) ======
-  renderAlertasCaducidad(vehiculos, remolques, profiles) {
-    const container = document.getElementById('dashboard-alertas-caducidad');
-    if (!container) return;
-
-    const hoy = new Date(); hoy.setHours(0,0,0,0);
-    const diasHasta = (f) => { if (!f) return null; return Math.ceil((new Date(f+'T00:00:00') - hoy) / 86400000); };
-    const alertas = [];
-
-    // Vehículos
-    (vehiculos || []).forEach(v => {
-      [{ campo: 'fecha_itv', label: 'ITV' }, { campo: 'fecha_seguro', label: 'Seguro' }, { campo: 'fecha_tarjeta_transporte', label: 'Tarjeta transp.' }].forEach(c => {
-        const dias = diasHasta(v[c.campo]);
-        if (dias !== null && dias <= 30) {
-          alertas.push({ tipo: 'Vehículo', nombre: v.matricula, doc: c.label, dias, fecha: v[c.campo] });
-        }
-      });
-    });
-
-    // Remolques
-    (remolques || []).forEach(r => {
-      [{ campo: 'fecha_itv', label: 'ITV' }, { campo: 'fecha_seguro', label: 'Seguro' }].forEach(c => {
-        const dias = diasHasta(r[c.campo]);
-        if (dias !== null && dias <= 30) {
-          alertas.push({ tipo: 'Remolque', nombre: r.matricula, doc: c.label, dias, fecha: r[c.campo] });
-        }
-      });
-    });
-
-    // Conductores
-    (profiles || []).filter(p => p.rol === 'conductor').forEach(p => {
-      [{ campo: 'fecha_cap', label: 'CAP' }, { campo: 'fecha_carnet', label: 'Carnet' }].forEach(c => {
-        const dias = diasHasta(p[c.campo]);
-        if (dias !== null && dias <= 30) {
-          alertas.push({ tipo: 'Conductor', nombre: `${p.nombre} ${p.apellidos}`, doc: c.label, dias, fecha: p[c.campo] });
-        }
-      });
-    });
-
-    // Ordenar: los más urgentes primero
-    alertas.sort((a, b) => a.dias - b.dias);
-
-    if (alertas.length === 0) {
-      container.innerHTML = '';
-      return;
-    }
-
-    const alertColor = (d) => d <= 7 ? '#dc2626' : '#d97706';
-    const alertBg    = (d) => d <= 7 ? '#fee2e2' : '#fef3c7';
-
-    container.innerHTML = `
-      <div class="section-header" style="margin-top:4px;">
-        <h3>⚠️ Próximas caducidades</h3>
-      </div>
-      ${alertas.slice(0, 8).map(a => {
-        const color = alertColor(a.dias);
-        const bg    = alertBg(a.dias);
-        const label = a.dias < 0 ? 'CADUCADO' : a.dias === 0 ? 'HOY' : `${a.dias}d`;
-        const fecha = new Date(a.fecha + 'T00:00:00').toLocaleDateString('es-ES');
-        return `
-          <div style="display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--bg-card); border-radius:10px; border:1px solid var(--border-light); margin-bottom:6px;">
-            <span class="alert-pill" style="background:${bg}; color:${color}; font-weight:700; font-size:11px; padding:3px 8px; border-radius:6px; white-space:nowrap;">${label}</span>
-            <div style="flex:1; min-width:0;">
-              <div style="font-weight:600; font-size:14px; color:var(--fg);">${a.nombre}</div>
-              <div style="font-size:12px; color:var(--fg-secondary);">${a.tipo} · ${a.doc} · ${fecha}</div>
-            </div>
-          </div>
-        `;
-      }).join('')}
-      ${alertas.length > 8 ? `<p style="text-align:center; font-size:12px; color:var(--fg-muted); margin-top:4px;">+${alertas.length - 8} alertas más en Flota y Equipo</p>` : ''}
-    `;
   },
 
   getGreeting() {
