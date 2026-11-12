@@ -132,10 +132,10 @@ const Flota = {
 
       return `
         <div class="vehicle-card" data-id="${item.id}">
-          <div class="vehicle-plate">${item.matricula}</div>
+          <div class="vehicle-plate">${esc(item.matricula)}</div>
           <div style="flex:1; min-width:0;">
-            <div class="vehicle-tag">${tipoLabel}</div>
-            <div style="font-size:13px; color:var(--fg-secondary);">${item.marca ? item.marca : ''}${item.modelo ? ' ' + item.modelo : ''}</div>
+            <div class="vehicle-tag">${esc(tipoLabel)}</div>
+            <div style="font-size:13px; color:var(--fg-secondary);">${item.marca ? esc(item.marca) : ''}${item.modelo ? ' ' + esc(item.modelo) : ''}</div>
             ${this._alertPills(item, isVehiculo)}
           </div>
           <span class="badge badge-${item.activo ? 'activo' : 'inactivo'}">${item.activo ? 'Activo' : 'Inactivo'}</span>
@@ -159,33 +159,33 @@ const Flota = {
       ? '<span class="badge badge-activo">Activo</span>'
       : '<span class="badge badge-inactivo">Inactivo</span>';
 
-    showModal(item.matricula, `
+    showModal(esc(item.matricula), `
       <div style="display:flex; flex-direction:column; gap:16px;">
         <div style="display:flex; align-items:center; gap:12px;">
           <div class="list-card-icon" style="width:56px;height:56px;font-size:24px;">
             ${isVehiculo ? this.getVehiculoIcon(item.tipo) : this.getRemolqueIcon(item.tipo)}
           </div>
           <div>
-            <span class="badge badge-info" style="margin-bottom:4px;">${tipoLabel}</span>
+            <span class="badge badge-info" style="margin-bottom:4px;">${esc(tipoLabel)}</span>
             ${statusBadge}
           </div>
         </div>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
           <div>
             <span style="font-size:12px; color:var(--gray-500);">Matrícula</span>
-            <p style="font-size:14px; font-weight:600;">${item.matricula}</p>
+            <p style="font-size:14px; font-weight:600;">${esc(item.matricula)}</p>
           </div>
           <div>
             <span style="font-size:12px; color:var(--gray-500);">Tipo</span>
-            <p style="font-size:14px; font-weight:500;">${tipoLabel}</p>
+            <p style="font-size:14px; font-weight:500;">${esc(tipoLabel)}</p>
           </div>
           <div>
             <span style="font-size:12px; color:var(--gray-500);">Marca</span>
-            <p style="font-size:14px; font-weight:500;">${item.marca || '—'}</p>
+            <p style="font-size:14px; font-weight:500;">${esc(item.marca) || '—'}</p>
           </div>
           <div>
             <span style="font-size:12px; color:var(--gray-500);">Modelo</span>
-            <p style="font-size:14px; font-weight:500;">${item.modelo || '—'}</p>
+            <p style="font-size:14px; font-weight:500;">${esc(item.modelo) || '—'}</p>
           </div>
           <div>
             <span style="font-size:12px; color:var(--gray-500);">N.º ejes</span>
@@ -255,7 +255,7 @@ const Flota = {
         <div class="form-row">
           <div class="form-group">
             <label for="flota-matricula">Matrícula *</label>
-            <input type="text" id="flota-matricula" required value="${item?.matricula || ''}"
+            <input type="text" id="flota-matricula" required value="${esc(item?.matricula)}"
                    placeholder="1234 ABC" style="text-transform:uppercase;">
           </div>
           <div class="form-group">
@@ -268,11 +268,11 @@ const Flota = {
         <div class="form-row">
           <div class="form-group">
             <label for="flota-marca">Marca</label>
-            <input type="text" id="flota-marca" value="${item?.marca || ''}" placeholder="Ej: Scania">
+            <input type="text" id="flota-marca" value="${esc(item?.marca)}" placeholder="Ej: Scania">
           </div>
           <div class="form-group">
             <label for="flota-modelo">Modelo</label>
-            <input type="text" id="flota-modelo" value="${item?.modelo || ''}" placeholder="Ej: R450">
+            <input type="text" id="flota-modelo" value="${esc(item?.modelo)}" placeholder="Ej: R450">
           </div>
         </div>
         <div class="form-row">
