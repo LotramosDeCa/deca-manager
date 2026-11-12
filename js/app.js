@@ -37,6 +37,9 @@ const App = {
     } catch(e) { this._authToken = SUPABASE_ANON_KEY; }
     this.updateHeader();
     this.buildBottomNav();
+    this._alertas = [];
+    document.getElementById('bell-btn').addEventListener('click', () => this.showAlertasModal());
+    this.loadAlertasBell(); // Cargar alertas en paralelo (no bloquea)
     this.navigate('dashboard');
   },
 
@@ -373,6 +376,114 @@ const App = {
         </div>
       `;
     }).join('');
+  },
+
+  // ====== CAMPANITA DE ALERTAS ======
+  async loadAlertasBell() {
+    try {
+      if (!this._authToken) {
+        try {
+          const s = await supabase.auth.getSession();
+          this._authToken = s?.data?.session?.access_token || SUPABASE_ANON_KEY;
+        } catch(e) { this._authToken = SUPABASE_ANON_KEY; }
+      }
+      const token = this._authToken;
+      const base = SUPABASE_URL + '/rest/v1';
+      const hdr = { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + token };
+      const qFetch = async (url) => { try { const r = await fetch(base + url, { headers: hdr }); return await r.json(); } catch(e) { return []; } };
+
+      const hoy = new Date(); hoy.setHours(0,0,0,0);
+      const diasHasta = (f) => { if (!f) return null; return Math.ceil((new Date(f+'T00:00:00') - hoy) / 86400000); };
+      const alertas = [];
+
+      if (Auth.isAdmin()) {
+        const vehiculos = await qFetch('/vehiculos?select=id,matricula,fecha_itv,fecha_seguro,fecha_tarjeta_transporte&activo=eq.true') || [];
+        const remolques = await qFetch('/remolques?select=id,matricula,fecha_itv,fecha_seguro&activo=eq.true') || [];
+        const profiles  = await qFetch('/profiles?select=id,nombre,apellidos,rol,fecha_cap,fecha_carnet&activo=eq.true') || [];
+
+        (vehiculos).forEach(v => {
+          [{campo:'fecha_itv',label:'ITV'},{campo:'fecha_seguro',label:'Seguro'},{campo:'fecha_tarjeta_transporte',label:'Tarjeta transp.'}].forEach(c => {
+            const dias = diasHasta(v[c.campo]);
+            if (dias !== null && dias <= 30) alertas.push({ tipo:'Vehículo', nombre:v.matricula, doc:c.label, dias, fecha:v[c.campo] });
+          });
+        });
+        (remolques).forEach(r => {
+          [{campo:'fecha_itv',label:'ITV'},{campo:'fecha_seguro',label:'Seguro'}].forEach(c => {
+            const dias = diasHasta(r[c.campo]);
+            if (dias !== null && dias <= 30) alertas.push({ tipo:'Remolque', nombre:r.matricula, doc:c.label, dias, fecha:r[c.campo] });
+          });
+        });
+        (profiles).filter(p => p.rol === 'conductor').forEach(p => {
+          [{campo:'fecha_cap',label:'CAP'},{campo:'fecha_carnet',label:'Carnet'}].forEach(c => {
+            const dias = diasHasta(p[c.campo]);
+            if (dias !== null && dias <= 30) alertas.push({ tipo:'Conductor', nombre:`${p.nombre} ${p.apellidos}`, doc:c.label, dias, fecha:p[c.campo] });
+          });
+        });
+      } else {
+        // Conductor: solo sus propias alertas
+        const p = Auth.currentProfile;
+        [{campo:'fecha_cap',label:'CAP'},{campo:'fecha_carnet',label:'Carnet de conducir'}].forEach(c => {
+          const dias = diasHasta(p[c.campo]);
+          if (dias !== null && dias <= 30) alertas.push({ tipo:'Tu documento', nombre:`${p.nombre} ${p.apellidos}`, doc:c.label, dias, fecha:p[c.campo] });
+        });
+      }
+
+      alertas.sort((a, b) => a.dias - b.dias);
+      this._alertas = alertas;
+      this.updateBellBadge();
+    } catch(e) {
+      console.warn('[BELL] Error cargando alertas:', e);
+    }
+  },
+
+  updateBellBadge() {
+    const badge = document.getElementById('bell-count');
+    if (!badge) return;
+    const count = this._alertas.length;
+    if (count > 0) {
+      badge.textContent = count > 99 ? '99+' : count;
+      badge.style.display = '';
+    } else {
+      badge.style.display = 'none';
+    }
+  },
+
+  showAlertasModal() {
+    const alertas = this._alertas || [];
+    const alertColor = (d) => d <= 7 ? '#dc2626' : '#d97706';
+    const alertBg    = (d) => d <= 7 ? '#fee2e2' : '#fef3c7';
+
+    if (alertas.length === 0) {
+      showModal('🔔 Alertas', `
+        <div class="empty-state" style="padding:24px 0;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--fg-muted);">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          <p style="margin-top:8px; color:var(--fg-secondary);">Todo en orden, sin caducidades próximas</p>
+        </div>
+      `, '<button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>');
+      return;
+    }
+
+    const listHTML = alertas.map(a => {
+      const color = alertColor(a.dias);
+      const bg    = alertBg(a.dias);
+      const label = a.dias < 0 ? 'CADUCADO' : a.dias === 0 ? 'HOY' : `${a.dias}d`;
+      const fecha = new Date(a.fecha + 'T00:00:00').toLocaleDateString('es-ES');
+      return `
+        <div style="display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--bg-card); border-radius:10px; border:1px solid var(--border-light); margin-bottom:6px;">
+          <span style="background:${bg}; color:${color}; font-weight:700; font-size:11px; padding:3px 8px; border-radius:6px; white-space:nowrap;">${label}</span>
+          <div style="flex:1; min-width:0;">
+            <div style="font-weight:600; font-size:14px; color:var(--fg);">${a.nombre}</div>
+            <div style="font-size:12px; color:var(--fg-secondary);">${a.tipo} · ${a.doc} · ${fecha}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    showModal('🔔 Alertas de caducidad', `
+      <div style="max-height:60vh; overflow-y:auto;">${listHTML}</div>
+    `, '<button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>');
   },
 
   // ====== ALERTAS DE CADUCIDAD (Dashboard admin) ======
