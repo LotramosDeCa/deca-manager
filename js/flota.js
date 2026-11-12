@@ -136,6 +136,7 @@ const Flota = {
           <div style="flex:1; min-width:0;">
             <div class="vehicle-tag">${tipoLabel}</div>
             <div style="font-size:13px; color:var(--fg-secondary);">${item.marca ? item.marca : ''}${item.modelo ? ' ' + item.modelo : ''}</div>
+            ${this._alertPills(item, isVehiculo)}
           </div>
           <span class="badge badge-${item.activo ? 'activo' : 'inactivo'}">${item.activo ? 'Activo' : 'Inactivo'}</span>
         </div>
@@ -198,6 +199,23 @@ const Flota = {
           <div>
             <span style="font-size:12px; color:var(--gray-500);">MMA (kg)</span>
             <p style="font-size:14px; font-weight:500;">${item.mma ? Number(item.mma).toLocaleString('es-ES') : '—'}</p>
+          </div>
+          ` : ''}
+          <div style="grid-column: 1/-1; border-top:1px solid var(--border-light); padding-top:12px; margin-top:4px;">
+            <span style="font-size:13px; font-weight:600; color:var(--fg);">Caducidades</span>
+          </div>
+          <div>
+            <span style="font-size:12px; color:var(--gray-500);">ITV</span>
+            <p style="font-size:14px; font-weight:500;">${this._fechaConAlerta(item.fecha_itv)}</p>
+          </div>
+          <div>
+            <span style="font-size:12px; color:var(--gray-500);">Seguro</span>
+            <p style="font-size:14px; font-weight:500;">${this._fechaConAlerta(item.fecha_seguro)}</p>
+          </div>
+          ${isVehiculo ? `
+          <div>
+            <span style="font-size:12px; color:var(--gray-500);">Tarjeta transporte</span>
+            <p style="font-size:14px; font-weight:500;">${this._fechaConAlerta(item.fecha_tarjeta_transporte)}</p>
           </div>
           ` : ''}
           <div style="grid-column: 1/-1;">
@@ -276,6 +294,26 @@ const Flota = {
           <div class="form-group"></div>
         </div>
         ` : ''}
+        <p style="font-size:13px; font-weight:600; color:var(--fg); margin-top:8px;">Fechas de caducidad</p>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="flota-fecha-itv">Caducidad ITV</label>
+            <input type="date" id="flota-fecha-itv" value="${item?.fecha_itv || ''}">
+          </div>
+          <div class="form-group">
+            <label for="flota-fecha-seguro">Caducidad Seguro</label>
+            <input type="date" id="flota-fecha-seguro" value="${item?.fecha_seguro || ''}">
+          </div>
+        </div>
+        ${isVehiculo ? `
+        <div class="form-row">
+          <div class="form-group">
+            <label for="flota-fecha-tarjeta">Tarjeta transporte</label>
+            <input type="date" id="flota-fecha-tarjeta" value="${item?.fecha_tarjeta_transporte || ''}">
+          </div>
+          <div class="form-group"></div>
+        </div>
+        ` : ''}
         <div id="flota-form-error" class="error-msg" hidden></div>
       </form>
     `;
@@ -317,11 +355,14 @@ const Flota = {
       modelo: document.getElementById('flota-modelo').value.trim() || null,
       num_ejes: document.getElementById('flota-ejes').value ? parseInt(document.getElementById('flota-ejes').value) : null,
       tara: document.getElementById('flota-tara').value ? parseFloat(document.getElementById('flota-tara').value) : null,
+      fecha_itv: document.getElementById('flota-fecha-itv').value || null,
+      fecha_seguro: document.getElementById('flota-fecha-seguro').value || null,
     };
 
-    // Vehículos tienen también MMA
+    // Vehículos tienen también MMA y tarjeta transporte
     if (isVehiculo) {
       record.mma = document.getElementById('flota-mma').value ? parseFloat(document.getElementById('flota-mma').value) : null;
+      record.fecha_tarjeta_transporte = document.getElementById('flota-fecha-tarjeta').value || null;
     }
 
     btn.disabled = true;
@@ -371,11 +412,14 @@ const Flota = {
       modelo: document.getElementById('flota-modelo').value.trim() || null,
       num_ejes: document.getElementById('flota-ejes').value ? parseInt(document.getElementById('flota-ejes').value) : null,
       tara: document.getElementById('flota-tara').value ? parseFloat(document.getElementById('flota-tara').value) : null,
+      fecha_itv: document.getElementById('flota-fecha-itv').value || null,
+      fecha_seguro: document.getElementById('flota-fecha-seguro').value || null,
     };
 
-    // Vehículos tienen también MMA
+    // Vehículos tienen también MMA y tarjeta transporte
     if (isVehiculo) {
       updates.mma = document.getElementById('flota-mma').value ? parseFloat(document.getElementById('flota-mma').value) : null;
+      updates.fecha_tarjeta_transporte = document.getElementById('flota-fecha-tarjeta').value || null;
     }
 
     btn.disabled = true;
@@ -460,5 +504,54 @@ const Flota = {
 
   getRemolquesActivos() {
     return this.remolques.filter(r => r.activo);
+  },
+
+  // ====== HELPERS DE ALERTAS DE CADUCIDAD ======
+  _diasHasta(fechaStr) {
+    if (!fechaStr) return null;
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    const fecha = new Date(fechaStr + 'T00:00:00');
+    return Math.ceil((fecha - hoy) / 86400000);
+  },
+
+  _alertaColor(dias) {
+    if (dias === null) return '';
+    if (dias <= 7) return '#dc2626';  // rojo
+    if (dias <= 30) return '#d97706'; // amarillo
+    return '#16a34a';                  // verde
+  },
+
+  _fechaConAlerta(fechaStr) {
+    if (!fechaStr) return '<span style="color:var(--fg-muted);">Sin fecha</span>';
+    const dias = this._diasHasta(fechaStr);
+    const color = this._alertaColor(dias);
+    const fechaFmt = new Date(fechaStr + 'T00:00:00').toLocaleDateString('es-ES');
+    let label = '';
+    if (dias < 0) label = ` <span style="color:${color}; font-weight:600;">(caducado)</span>`;
+    else if (dias === 0) label = ` <span style="color:${color}; font-weight:600;">(hoy)</span>`;
+    else if (dias <= 7) label = ` <span style="color:${color}; font-weight:600;">(${dias}d)</span>`;
+    else if (dias <= 30) label = ` <span style="color:${color}; font-weight:600;">(${dias}d)</span>`;
+    return `<span style="color:${color};">${fechaFmt}</span>${label}`;
+  },
+
+  _alertPills(item, isVehiculo) {
+    const campos = [
+      { key: 'fecha_itv', label: 'ITV' },
+      { key: 'fecha_seguro', label: 'Seguro' },
+    ];
+    if (isVehiculo) campos.push({ key: 'fecha_tarjeta_transporte', label: 'Tarjeta' });
+
+    const pills = campos
+      .map(c => {
+        const dias = this._diasHasta(item[c.key]);
+        if (dias === null || dias > 30) return '';
+        const color = this._alertaColor(dias);
+        const texto = dias < 0 ? `${c.label} caducado` : dias === 0 ? `${c.label} hoy` : `${c.label} ${dias}d`;
+        return `<span class="alert-pill" style="background:${color}15; color:${color}; border:1px solid ${color}30;">${texto}</span>`;
+      })
+      .filter(Boolean)
+      .join('');
+
+    return pills ? `<div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:4px;">${pills}</div>` : '';
   }
 };
