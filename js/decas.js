@@ -51,7 +51,6 @@ const Decas = {
 
   // ====== CARGAR LISTA ======
   async loadDecas() {
-    console.log('[DeCA] loadDecas iniciando...');
     try {
       let params = 'select=*&order=created_at.desc';
 
@@ -75,7 +74,6 @@ const Decas = {
     }
 
     // SIEMPRE renderizar, incluso si la lista está vacía por error
-    console.log('[DeCA] loadDecas completado, items:', this.list.length);
     this.renderList();
   },
 
@@ -640,19 +638,15 @@ const Decas = {
         creado_por: Auth.currentProfile.id,
       };
 
-      console.log('[DeCA] Insertando...', referencia);
       const { data: inserted, error } = await sbInsert('decas', record);
       if (error) throw new Error(error.message);
       const data = Array.isArray(inserted) ? inserted[0] : inserted;
-      console.log('[DeCA] Creada OK:', referencia);
 
       closeModal();
       showToast(`DeCA ${referencia} creada`);
       this._pendingRecord = null;
 
-      console.log('[DeCA] Recargando lista...');
       await this.loadDecas();
-      console.log('[DeCA] Lista recargada OK');
 
       // Enviar por email en segundo plano (no bloquea)
       if (data) this._enviarPorEmail(data);
@@ -683,8 +677,11 @@ const Decas = {
     const y = now.getFullYear();
     const m = String(now.getMonth() + 1).padStart(2, '0');
     const d = String(now.getDate()).padStart(2, '0');
-    const rand = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
-    return `DECA-${y}${m}${d}-${rand}`;
+    // Token alfanumérico de 8 chars (62^8 = 218 billones de combinaciones)
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const arr = crypto.getRandomValues(new Uint8Array(8));
+    const token = Array.from(arr, b => chars[b % chars.length]).join('');
+    return `DECA-${y}${m}${d}-${token}`;
   },
 
   // ====== GENERAR PDF CON QR ======
@@ -1165,7 +1162,6 @@ const Decas = {
       const { error: uErr } = await sbUpdate('decas', 'id=eq.' + decaId, updateRecord);
       if (uErr) throw new Error(uErr.message);
 
-      console.log('[DeCA] Editada OK:', orig.referencia, 'v' + nuevaVersion);
 
       // Limpiar datos temporales
       this._editOriginal = null;
