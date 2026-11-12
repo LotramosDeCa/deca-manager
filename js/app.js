@@ -96,7 +96,6 @@ const App = {
 
   async navigate(view) {
     const navId = ++this._navId;
-    console.log('[NAV] →', view, 'navId:', navId);
     this.currentView = view;
     const content = document.getElementById('main-content');
     const title = document.getElementById('header-title');
@@ -251,7 +250,6 @@ const App = {
   },
 
   async loadDashboardStats(isAdmin) {
-    console.log('[DASH] Inicio loadDashboardStats');
     try {
       // Token cacheado para no depender del SDK (se bloquea en visitas sucesivas)
       if (!this._authToken) {
@@ -278,15 +276,12 @@ const App = {
           return await res.json();
         } catch (e) {
           clearTimeout(timer);
-          console.warn('[DASH] fetch falló:', url, e.message);
           return null;
         }
       };
 
       if (isAdmin) {
-        console.log('[DASH] Query decas...');
         const allDecas = await dashFetch('/decas?select=id,estado,created_at,referencia,origen,destino,fecha_transporte,matricula_vehiculo,nombre_conductor,version&order=created_at.desc') || [];
-        console.log('[DASH] Decas recibidas:', allDecas.length);
 
         const activas = allDecas.filter(d => d.estado === 'activo').length;
         const finalizadas = allDecas.filter(d => d.estado === 'finalizado').length;
@@ -324,9 +319,8 @@ const App = {
         document.getElementById('stat-modificadas').textContent = modificadas;
         this.renderUltimasDeCA(ultimas);
       }
-      console.log('[DASH] Stats renderizadas OK');
     } catch (err) {
-      console.warn('[DASH] Error cargando stats:', err);
+      console.error('[DASH] Error:', err);
     }
   },
 
@@ -425,7 +419,7 @@ const App = {
       this._alertas = alertas;
       this.updateBellBadge();
     } catch(e) {
-      console.warn('[BELL] Error cargando alertas:', e);
+      console.error('[BELL] Error:', e);
     }
   },
 
