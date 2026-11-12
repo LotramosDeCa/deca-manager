@@ -45,6 +45,20 @@ const SUPABASE_OPTIONS = {
 // (la promesa nunca se resuelve: ni dato, ni error, ni timeout).
 // Esta función hace la misma consulta con fetch y devuelve el mismo
 // formato { data, error }, así que es un reemplazo directo.
+// ------------------------------------------------------------
+// esc — escapar HTML para prevenir XSS
+// Usar SIEMPRE al inyectar datos de usuario en innerHTML
+// ------------------------------------------------------------
+function esc(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 let SB_TOKEN = null;
 
 function sbToken() {
