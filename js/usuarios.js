@@ -140,6 +140,10 @@ const Usuarios = {
     `, `
       <button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>
       <button class="btn btn-primary" onclick="Usuarios.showForm('${user.id}')">Editar</button>
+      ${!isCurrentUser ? `<button class="btn btn-sm" style="background:#7c3aed; color:#fff; border:none;" onclick="Usuarios.resetPassword('${user.user_id}', '${user.nombre} ${user.apellidos}')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Restaurar clave
+      </button>` : ''}
       ${!isCurrentUser ? `<button class="btn ${user.activo ? 'btn-danger' : 'btn-success'} btn-sm" onclick="Usuarios.toggleActive('${user.id}', ${!user.activo})">${user.activo ? 'Desactivar' : 'Activar'}</button>` : ''}
     `);
   },
@@ -343,17 +347,29 @@ const Usuarios = {
     );
   },
 
-  // Cambiar contraseña (via Edge Function)
-  async resetPassword(userId, email) {
+  // Restaurar contraseña a genérica (via Edge Function)
+  async resetPassword(authUserId, nombreCompleto) {
     confirmAction(
-      `¿Enviar email de restablecimiento de contraseña a ${email}?`,
+      `¿Restaurar la contraseña de ${nombreCompleto} a "123456"?\n\nCuando entre con esa clave, la app le pedirá que ponga una nueva.`,
       async () => {
         try {
-          const { error } = await supabase.auth.resetPasswordForEmail(email);
-          if (error) throw error;
-          showToast('Email de restablecimiento enviado');
+          const res = await fetch(SUPABASE_URL + '/functions/v1/reset-password', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + sbToken(),
+              'apikey': SUPABASE_ANON_KEY
+            },
+            body: JSON.stringify({ user_id: authUserId, new_password: '123456' })
+          });
+
+          const result = await res.json();
+          if (!res.ok) throw new Error(result.error || 'Error restaurando contraseña');
+
+          closeModal();
+          showToast(`Contraseña de ${nombreCompleto} restaurada a "123456"`);
         } catch (err) {
-          showToast('Error enviando email', 'error');
+          showToast('Error: ' + err.message, 'error');
         }
       }
     );
