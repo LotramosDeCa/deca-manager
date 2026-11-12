@@ -118,6 +118,19 @@ const Usuarios = {
             <span style="font-size:12px; color:var(--gray-500);">Teléfono</span>
             <p style="font-size:14px; font-weight:500;">${user.telefono || '—'}</p>
           </div>
+          ${user.rol === 'conductor' ? `
+          <div style="grid-column:1/-1; border-top:1px solid var(--border-light); padding-top:8px; margin-top:4px;">
+            <span style="font-size:13px; font-weight:600; color:var(--fg);">Caducidades</span>
+          </div>
+          <div>
+            <span style="font-size:12px; color:var(--gray-500);">CAP</span>
+            <p style="font-size:14px; font-weight:500;">${this._fechaConAlerta(user.fecha_cap)}</p>
+          </div>
+          <div>
+            <span style="font-size:12px; color:var(--gray-500);">Carnet de conducir</span>
+            <p style="font-size:14px; font-weight:500;">${this._fechaConAlerta(user.fecha_carnet)}</p>
+          </div>
+          ` : ''}
           <div>
             <span style="font-size:12px; color:var(--gray-500);">Registrado</span>
             <p style="font-size:14px; font-weight:500;">${new Date(user.created_at).toLocaleDateString('es-ES')}</p>
@@ -177,6 +190,17 @@ const Usuarios = {
             <option value="conductor" ${(!user || user.rol === 'conductor') ? 'selected' : ''}>Conductor</option>
             <option value="admin" ${user?.rol === 'admin' ? 'selected' : ''}>Administrador</option>
           </select>
+        </div>
+        <p style="font-size:13px; font-weight:600; color:var(--fg); margin-top:8px;">Fechas de caducidad</p>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="user-fecha-cap">CAP</label>
+            <input type="date" id="user-fecha-cap" value="${user?.fecha_cap || ''}">
+          </div>
+          <div class="form-group">
+            <label for="user-fecha-carnet">Carnet de conducir</label>
+            <input type="date" id="user-fecha-carnet" value="${user?.fecha_carnet || ''}">
+          </div>
         </div>
         <div id="user-form-error" class="error-msg" hidden></div>
       </form>
@@ -263,6 +287,8 @@ const Usuarios = {
       dni: document.getElementById('user-dni').value.trim() || null,
       telefono: document.getElementById('user-telefono').value.trim() || null,
       rol: document.getElementById('user-rol').value,
+      fecha_cap: document.getElementById('user-fecha-cap').value || null,
+      fecha_carnet: document.getElementById('user-fecha-carnet').value || null,
     };
 
     btn.disabled = true;
@@ -331,5 +357,29 @@ const Usuarios = {
         }
       }
     );
+  },
+
+  // ── Helpers de caducidad ──────────────────────────────────
+  _diasHasta(fechaStr) {
+    if (!fechaStr) return null;
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    const f   = new Date(fechaStr + 'T00:00:00');
+    return Math.ceil((f - hoy) / 86400000);
+  },
+
+  _alertaColor(dias) {
+    if (dias == null) return '#9ca3af';
+    if (dias <= 7)  return '#dc2626';
+    if (dias <= 30) return '#d97706';
+    return '#16a34a';
+  },
+
+  _fechaConAlerta(fechaStr) {
+    if (!fechaStr) return '<span style="color:var(--fg-muted)">Sin fecha</span>';
+    const dias  = this._diasHasta(fechaStr);
+    const color = this._alertaColor(dias);
+    const label = dias < 0 ? '(caducado)' : dias === 0 ? '(hoy)' : `(${dias}d)`;
+    const fecha = new Date(fechaStr + 'T00:00:00').toLocaleDateString('es-ES');
+    return `<span style="color:${color}; font-weight:600;">${fecha} ${label}</span>`;
   }
 };
