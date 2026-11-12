@@ -27,9 +27,27 @@ const Decas = {
           Nueva DeCA
         </button>
       </div>
-      <div class="search-inline" style="margin-bottom:12px;">
+      <div class="search-inline" style="margin-bottom:8px;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" id="deca-search" placeholder="Buscar referencia, matrícula..." style="border:none; outline:none; font-size:14px; background:transparent; flex:1;">
+      </div>
+      <div style="display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap; align-items:center;">
+        <div style="display:flex; align-items:center; gap:4px; flex:1; min-width:140px;">
+          <label for="deca-fecha-desde" style="font-size:11px; color:var(--fg-muted); white-space:nowrap;">Desde</label>
+          <input type="date" id="deca-fecha-desde" style="flex:1; font-size:12px; padding:6px 8px; border:1px solid var(--border); border-radius:8px; background:var(--bg-card); color:var(--fg); min-width:0;">
+        </div>
+        <div style="display:flex; align-items:center; gap:4px; flex:1; min-width:140px;">
+          <label for="deca-fecha-hasta" style="font-size:11px; color:var(--fg-muted); white-space:nowrap;">Hasta</label>
+          <input type="date" id="deca-fecha-hasta" style="flex:1; font-size:12px; padding:6px 8px; border:1px solid var(--border); border-radius:8px; background:var(--bg-card); color:var(--fg); min-width:0;">
+        </div>
+        <button type="button" id="deca-clear-dates" title="Limpiar fechas" style="background:none; border:none; cursor:pointer; padding:4px; color:var(--fg-muted); font-size:16px; line-height:1; display:none;">✕</button>
+      </div>
+      <div class="filter-chips" style="margin-bottom:12px; display:flex; gap:6px; flex-wrap:wrap;">
+        <button class="chip active" data-estado="todos">Todos</button>
+        <button class="chip" data-estado="activo">Activa</button>
+        <button class="chip" data-estado="modificado">Modificada</button>
+        <button class="chip" data-estado="anulado">Anulada</button>
+        <button class="chip" data-estado="finalizado">Finalizada</button>
       </div>
       <div id="deca-list" class="card-list">
         <div class="skeleton" style="height: 80px; margin-bottom: 8px;"></div>
@@ -45,7 +63,42 @@ const Decas = {
       this.renderList();
     });
 
+    // Filtros de fecha
+    const fechaDesde = document.getElementById('deca-fecha-desde');
+    const fechaHasta = document.getElementById('deca-fecha-hasta');
+    const clearDates = document.getElementById('deca-clear-dates');
+
+    const onDateChange = () => {
+      this._fechaDesde = fechaDesde.value || '';
+      this._fechaHasta = fechaHasta.value || '';
+      clearDates.style.display = (this._fechaDesde || this._fechaHasta) ? 'block' : 'none';
+      this.renderList();
+    };
+    fechaDesde.addEventListener('change', onDateChange);
+    fechaHasta.addEventListener('change', onDateChange);
+    clearDates.addEventListener('click', () => {
+      fechaDesde.value = '';
+      fechaHasta.value = '';
+      this._fechaDesde = '';
+      this._fechaHasta = '';
+      clearDates.style.display = 'none';
+      this.renderList();
+    });
+
+    // Chips de estado
+    document.querySelectorAll('.filter-chips .chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.filter-chips .chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        this._estadoFilter = chip.dataset.estado;
+        this.renderList();
+      });
+    });
+
     this._searchQuery = '';
+    this._fechaDesde = '';
+    this._fechaHasta = '';
+    this._estadoFilter = 'todos';
     await this.loadDecas();
   },
 
@@ -84,7 +137,7 @@ const Decas = {
 
     let items = this.list;
 
-    // Filtrar
+    // Filtro de texto
     if (this._searchQuery) {
       items = items.filter(d =>
         (d.referencia || '').toLowerCase().includes(this._searchQuery) ||
@@ -95,6 +148,19 @@ const Decas = {
       );
     }
 
+    // Filtro por fecha de transporte
+    if (this._fechaDesde) {
+      items = items.filter(d => d.fecha_transporte && d.fecha_transporte >= this._fechaDesde);
+    }
+    if (this._fechaHasta) {
+      items = items.filter(d => d.fecha_transporte && d.fecha_transporte <= this._fechaHasta);
+    }
+
+    // Filtro por estado (chips)
+    if (this._estadoFilter && this._estadoFilter !== 'todos') {
+      items = items.filter(d => d.estado === this._estadoFilter);
+    }
+
     if (items.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
@@ -102,7 +168,7 @@ const Decas = {
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <polyline points="14,2 14,8 20,8"/>
           </svg>
-          <p>${this._searchQuery ? 'No se encontraron resultados' : 'No hay DeCA creadas'}</p>
+          <p>${(this._searchQuery || this._fechaDesde || this._fechaHasta || (this._estadoFilter && this._estadoFilter !== 'todos')) ? 'No se encontraron resultados' : 'No hay DeCA creadas'}</p>
         </div>
       `;
       return;
