@@ -196,9 +196,9 @@ const Decas = {
       return `
         <div class="deca-item" data-id="${d.id}">
           <div style="flex:1; min-width:0;">
-            <div class="deca-ref">${d.referencia || 'Sin ref.'} ${d.version > 1 ? '<span style="color:var(--fg-muted)">v' + d.version + '</span>' : ''}</div>
-            <div class="deca-info">${d.origen || '?'} → ${d.destino || '?'}</div>
-            <div class="deca-info">${fecha} · ${d.matricula_vehiculo || '—'} ${d.nombre_conductor ? '· ' + d.nombre_conductor : ''}</div>
+            <div class="deca-ref">${esc(d.referencia) || 'Sin ref.'} ${d.version > 1 ? '<span style="color:var(--fg-muted)">v' + d.version + '</span>' : ''}</div>
+            <div class="deca-info">${esc(d.origen) || '?'} → ${esc(d.destino) || '?'}</div>
+            <div class="deca-info">${fecha} · ${esc(d.matricula_vehiculo) || '—'} ${d.nombre_conductor ? '· ' + esc(d.nombre_conductor) : ''}</div>
           </div>
           <span class="badge ${estadoClass}" style="flex-shrink:0; font-size:11px;">${estadoLabel}</span>
         </div>
@@ -227,7 +227,7 @@ const Decas = {
       activo: 'badge-info', finalizado: 'badge-success', modificado: 'badge-warning', anulado: 'badge-danger',
     }[d.estado] || 'badge-info';
 
-    showModal(d.referencia || 'DeCA', `
+    showModal(esc(d.referencia) || 'DeCA', `
       <div style="display:flex; flex-direction:column; gap:14px; max-height:60vh; overflow-y:auto;">
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
           <span class="badge ${estadoClass}">${estadoLabel}</span>
@@ -236,17 +236,17 @@ const Decas = {
         ${d.estado === 'anulado' && d.motivo_anulacion ? `
         <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:10px;">
           <span style="font-size:11px; color:var(--danger); font-weight:600;">Motivo de anulación</span>
-          <p style="font-size:13px; margin-top:2px;">${d.motivo_anulacion}</p>
+          <p style="font-size:13px; margin-top:2px;">${esc(d.motivo_anulacion)}</p>
         </div>` : ''}
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
           <div>
             <span style="font-size:11px; color:var(--gray-500);">Referencia</span>
-            <p style="font-size:13px; font-weight:600;">${d.referencia || '—'}</p>
+            <p style="font-size:13px; font-weight:600;">${esc(d.referencia) || '—'}</p>
           </div>
           <div>
             <span style="font-size:11px; color:var(--gray-500);">N. expedicion</span>
-            <p style="font-size:13px; font-weight:500;">${d.num_expedicion || '—'}</p>
+            <p style="font-size:13px; font-weight:500;">${esc(d.num_expedicion) || '—'}</p>
           </div>
         </div>
 
@@ -256,13 +256,13 @@ const Decas = {
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
           <div>
             <span style="font-size:11px; color:var(--gray-500);">Cargador</span>
-            <p style="font-size:13px; font-weight:500;">${d.nombre_cargador || '—'}</p>
-            <p style="font-size:11px; color:var(--gray-500);">${d.nif_cargador || ''}</p>
+            <p style="font-size:13px; font-weight:500;">${esc(d.nombre_cargador) || '—'}</p>
+            <p style="font-size:11px; color:var(--gray-500);">${esc(d.nif_cargador)}</p>
           </div>
           <div>
             <span style="font-size:11px; color:var(--gray-500);">Destinatario</span>
-            <p style="font-size:13px; font-weight:500;">${d.nombre_destinatario || '—'}</p>
-            <p style="font-size:11px; color:var(--gray-500);">${d.nif_destinatario || ''}</p>
+            <p style="font-size:13px; font-weight:500;">${esc(d.nombre_destinatario) || '—'}</p>
+            <p style="font-size:11px; color:var(--gray-500);">${esc(d.nif_destinatario)}</p>
           </div>
         </div>
         ` : ''}
@@ -280,19 +280,19 @@ const Decas = {
           </div>
           <div>
             <span style="font-size:11px; color:var(--gray-500);">Lugar de carga</span>
-            <p style="font-size:13px; font-weight:500;">${d.origen || '—'}</p>
+            <p style="font-size:13px; font-weight:500;">${esc(d.origen) || '—'}</p>
           </div>
           <div>
             <span style="font-size:11px; color:var(--gray-500);">Lugar de descarga</span>
-            <p style="font-size:13px; font-weight:500;">${d.destino || '—'}</p>
+            <p style="font-size:13px; font-weight:500;">${esc(d.destino) || '—'}</p>
           </div>
           <div style="grid-column:1/-1;">
             <span style="font-size:11px; color:var(--gray-500);">Mercancia</span>
-            <p style="font-size:13px; font-weight:500;">${d.descripcion_mercancia || '—'}</p>
+            <p style="font-size:13px; font-weight:500;">${esc(d.descripcion_mercancia) || '—'}</p>
           </div>
           <div>
             <span style="font-size:11px; color:var(--gray-500);">Cantidad</span>
-            <p style="font-size:13px; font-weight:500;">${d.cantidad ? Number(d.cantidad).toLocaleString('es-ES') + (d.unidad ? ' ' + d.unidad : '') : (d.peso ? Number(d.peso).toLocaleString('es-ES') + ' kg' : '—')}</p>
+            <p style="font-size:13px; font-weight:500;">${d.cantidad ? Number(d.cantidad).toLocaleString('es-ES') + (d.unidad ? ' ' + esc(d.unidad) : '') : (d.peso ? Number(d.peso).toLocaleString('es-ES') + ' kg' : '—')}</p>
           </div>
         </div>
 
@@ -301,27 +301,27 @@ const Decas = {
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
           <div>
             <span style="font-size:11px; color:var(--gray-500);">Conductor</span>
-            <p style="font-size:13px; font-weight:500;">${d.nombre_conductor || '—'}</p>
+            <p style="font-size:13px; font-weight:500;">${esc(d.nombre_conductor) || '—'}</p>
           </div>
           <div>
             <span style="font-size:11px; color:var(--gray-500);">DNI conductor</span>
-            <p style="font-size:13px; font-weight:500;">${d.dni_conductor || '—'}</p>
+            <p style="font-size:13px; font-weight:500;">${esc(d.dni_conductor) || '—'}</p>
           </div>
           <div>
             <span style="font-size:11px; color:var(--gray-500);">Vehiculo</span>
-            <p style="font-size:13px; font-weight:500;">${d.matricula_vehiculo || '—'}</p>
+            <p style="font-size:13px; font-weight:500;">${esc(d.matricula_vehiculo) || '—'}</p>
           </div>
           <div>
             <span style="font-size:11px; color:var(--gray-500);">Remolque</span>
-            <p style="font-size:13px; font-weight:500;">${d.matricula_remolque || '—'}</p>
+            <p style="font-size:13px; font-weight:500;">${esc(d.matricula_remolque) || '—'}</p>
           </div>
           <div>
             <span style="font-size:11px; color:var(--gray-500);">Empresa</span>
-            <p style="font-size:13px; font-weight:500;">${d.empresa || '—'}</p>
+            <p style="font-size:13px; font-weight:500;">${esc(d.empresa) || '—'}</p>
           </div>
           <div>
             <span style="font-size:11px; color:var(--gray-500);">NIF empresa</span>
-            <p style="font-size:13px; font-weight:500;">${d.nif_empresa || '—'}</p>
+            <p style="font-size:13px; font-weight:500;">${esc(d.nif_empresa) || '—'}</p>
           </div>
         </div>
       </div>
@@ -378,13 +378,13 @@ const Decas = {
 
     // Construir opciones de mercancías predefinidas
     const mercanciaOptions = (mercanciasRes.data || []).map(m =>
-      `<option value="${m.nombre}">${m.nombre}</option>`
+      `<option value="${esc(m.nombre)}">${esc(m.nombre)}</option>`
     ).join('');
 
     // Construir opciones de clientes con data-* para copiar datos al registro
     const clienteOptions = this._clientesActivos.map(c => {
       const dir = [c.direccion, c.poblacion, c.codigo_postal, c.provincia].filter(Boolean).join(', ');
-      return `<option value="${c.id}" data-nombre="${c.nombre}" data-nif="${c.nif || ''}" data-direccion="${dir}">${c.nombre}${c.nif ? ' (' + c.nif + ')' : ''}</option>`;
+      return `<option value="${c.id}" data-nombre="${esc(c.nombre)}" data-nif="${esc(c.nif)}" data-direccion="${esc(dir)}">${esc(c.nombre)}${c.nif ? ' (' + esc(c.nif) + ')' : ''}</option>`;
     }).join('');
 
     const formHTML = `
@@ -473,7 +473,7 @@ const Decas = {
           <label for="deca-conductor">Conductor *</label>
           <select id="deca-conductor" required>
             <option value="">Seleccionar conductor</option>
-            ${todosConductores.map(c => `<option value="${c.id}" data-nombre="${c.nombre} ${c.apellidos}" data-dni="${c.dni || ''}">${c.nombre} ${c.apellidos}</option>`).join('')}
+            ${todosConductores.map(c => `<option value="${c.id}" data-nombre="${esc(c.nombre)} ${esc(c.apellidos)}" data-dni="${esc(c.dni)}">${esc(c.nombre)} ${esc(c.apellidos)}</option>`).join('')}
           </select>
         </div>
 
@@ -481,7 +481,7 @@ const Decas = {
           <label for="deca-vehiculo">Vehiculo *</label>
           <select id="deca-vehiculo" required>
             <option value="">Seleccionar vehiculo</option>
-            ${this.vehiculosActivos.map(v => `<option value="${v.id}" data-matricula="${v.matricula}">${v.matricula}${v.marca ? ' -- ' + v.marca : ''}${v.modelo ? ' ' + v.modelo : ''}</option>`).join('')}
+            ${this.vehiculosActivos.map(v => `<option value="${v.id}" data-matricula="${esc(v.matricula)}">${esc(v.matricula)}${v.marca ? ' -- ' + esc(v.marca) : ''}${v.modelo ? ' ' + esc(v.modelo) : ''}</option>`).join('')}
           </select>
         </div>
 
@@ -489,7 +489,7 @@ const Decas = {
           <label for="deca-remolque">Remolque</label>
           <select id="deca-remolque">
             <option value="">Sin remolque</option>
-            ${this.remolquesActivos.map(r => `<option value="${r.id}" data-matricula="${r.matricula}">${r.matricula}${r.marca ? ' -- ' + r.marca : ''}${r.modelo ? ' ' + r.modelo : ''}</option>`).join('')}
+            ${this.remolquesActivos.map(r => `<option value="${r.id}" data-matricula="${esc(r.matricula)}">${esc(r.matricula)}${r.marca ? ' -- ' + esc(r.marca) : ''}${r.modelo ? ' ' + esc(r.modelo) : ''}</option>`).join('')}
           </select>
         </div>
 
@@ -573,13 +573,13 @@ const Decas = {
           <p style="font-size:11px; color:var(--primary); font-weight:600; text-transform:uppercase; grid-column:1/-1; margin-bottom:2px;">Partes intervinientes</p>
           <div>
             <span style="font-size:11px; color:var(--gray-500);">Cargador</span>
-            <p style="font-size:13px; font-weight:600;">${r.nombre_cargador}</p>
-            <p style="font-size:11px; color:var(--gray-500);">${r.nif_cargador || ''}</p>
+            <p style="font-size:13px; font-weight:600;">${esc(r.nombre_cargador)}</p>
+            <p style="font-size:11px; color:var(--gray-500);">${esc(r.nif_cargador)}</p>
           </div>
           <div>
             <span style="font-size:11px; color:var(--gray-500);">Destinatario</span>
-            <p style="font-size:13px; font-weight:600;">${r.nombre_destinatario}</p>
-            <p style="font-size:11px; color:var(--gray-500);">${r.nif_destinatario || ''}</p>
+            <p style="font-size:13px; font-weight:600;">${esc(r.nombre_destinatario)}</p>
+            <p style="font-size:11px; color:var(--gray-500);">${esc(r.nif_destinatario)}</p>
           </div>
         </div>
 
@@ -591,23 +591,23 @@ const Decas = {
           </div>
           <div>
             <span style="font-size:11px; color:var(--gray-500);">Hora carga</span>
-            <p style="font-size:13px; font-weight:500;">${r.hora_carga || '—'}</p>
+            <p style="font-size:13px; font-weight:500;">${esc(r.hora_carga) || '—'}</p>
           </div>
           <div>
             <span style="font-size:11px; color:var(--gray-500);">Lugar de carga</span>
-            <p style="font-size:13px; font-weight:600;">${r.origen}</p>
+            <p style="font-size:13px; font-weight:600;">${esc(r.origen)}</p>
           </div>
           <div>
             <span style="font-size:11px; color:var(--gray-500);">Lugar de descarga</span>
-            <p style="font-size:13px; font-weight:600;">${r.destino}</p>
+            <p style="font-size:13px; font-weight:600;">${esc(r.destino)}</p>
           </div>
           <div style="grid-column:1/-1;">
             <span style="font-size:11px; color:var(--gray-500);">Mercancia</span>
-            <p style="font-size:13px; font-weight:500;">${r.descripcion_mercancia}</p>
+            <p style="font-size:13px; font-weight:500;">${esc(r.descripcion_mercancia)}</p>
           </div>
           <div>
             <span style="font-size:11px; color:var(--gray-500);">Cantidad</span>
-            <p style="font-size:13px; font-weight:500;">${r.cantidad ? Number(r.cantidad).toLocaleString('es-ES') + ' ' + (r.unidad || '') : '—'}</p>
+            <p style="font-size:13px; font-weight:500;">${r.cantidad ? Number(r.cantidad).toLocaleString('es-ES') + ' ' + esc(r.unidad) : '—'}</p>
           </div>
         </div>
 
@@ -615,19 +615,19 @@ const Decas = {
           <p style="font-size:11px; color:var(--primary); font-weight:600; text-transform:uppercase; grid-column:1/-1; margin-bottom:2px;">Vehiculo y conductor</p>
           <div>
             <span style="font-size:11px; color:var(--gray-500);">Conductor</span>
-            <p style="font-size:13px; font-weight:500;">${r.nombre_conductor}</p>
+            <p style="font-size:13px; font-weight:500;">${esc(r.nombre_conductor)}</p>
           </div>
           <div>
             <span style="font-size:11px; color:var(--gray-500);">DNI</span>
-            <p style="font-size:13px; font-weight:500;">${r.dni_conductor || '—'}</p>
+            <p style="font-size:13px; font-weight:500;">${esc(r.dni_conductor) || '—'}</p>
           </div>
           <div>
             <span style="font-size:11px; color:var(--gray-500);">Vehiculo</span>
-            <p style="font-size:13px; font-weight:500;">${r.matricula_vehiculo}</p>
+            <p style="font-size:13px; font-weight:500;">${esc(r.matricula_vehiculo)}</p>
           </div>
           <div>
             <span style="font-size:11px; color:var(--gray-500);">Remolque</span>
-            <p style="font-size:13px; font-weight:500;">${r.matricula_remolque || 'Sin remolque'}</p>
+            <p style="font-size:13px; font-weight:500;">${esc(r.matricula_remolque) || 'Sin remolque'}</p>
           </div>
         </div>
 
@@ -863,20 +863,20 @@ const Decas = {
     // Construir opciones de mercancías (incluir valor actual si no está en la lista)
     const mercList = (mercanciasRes.data || []);
     const mercExiste = deca.descripcion_mercancia && !mercList.find(m => m.nombre === deca.descripcion_mercancia);
-    const mercanciaOptions = (mercExiste ? `<option value="${deca.descripcion_mercancia}">${deca.descripcion_mercancia}</option>` : '') +
-      mercList.map(m => `<option value="${m.nombre}">${m.nombre}</option>`).join('');
+    const mercanciaOptions = (mercExiste ? `<option value="${esc(deca.descripcion_mercancia)}">${esc(deca.descripcion_mercancia)}</option>` : '') +
+      mercList.map(m => `<option value="${esc(m.nombre)}">${esc(m.nombre)}</option>`).join('');
 
     // Construir opciones con pre-selección
     const clienteOptions = this._clientesActivos.map(c => {
       const dir = [c.direccion, c.poblacion, c.codigo_postal, c.provincia].filter(Boolean).join(', ');
-      return `<option value="${c.id}" data-nombre="${c.nombre}" data-nif="${c.nif || ''}" data-direccion="${dir}">${c.nombre}${c.nif ? ' (' + c.nif + ')' : ''}</option>`;
+      return `<option value="${c.id}" data-nombre="${esc(c.nombre)}" data-nif="${esc(c.nif)}" data-direccion="${esc(dir)}">${esc(c.nombre)}${c.nif ? ' (' + esc(c.nif) + ')' : ''}</option>`;
     }).join('');
 
     const formHTML = `
       <form id="deca-form" style="display:flex; flex-direction:column; gap:4px; max-height:65vh; overflow-y:auto; padding-right:4px;">
 
         <div style="background:var(--warning-bg, #fef3c7); border-radius:8px; padding:8px 12px; margin-bottom:4px;">
-          <p style="font-size:12px; color:#92400e; font-weight:600;">Editando: ${deca.referencia} (v${deca.version})</p>
+          <p style="font-size:12px; color:#92400e; font-weight:600;">Editando: ${esc(deca.referencia)} (v${deca.version})</p>
         </div>
 
         <p style="font-size:12px; color:var(--gray-500); margin-bottom:4px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Partes intervinientes</p>
@@ -903,22 +903,22 @@ const Decas = {
         <div class="form-row">
           <div class="form-group">
             <label for="deca-fecha">Fecha de transporte *</label>
-            <input type="date" id="deca-fecha" required value="${deca.fecha_transporte || ''}">
+            <input type="date" id="deca-fecha" required value="${esc(deca.fecha_transporte)}">
           </div>
           <div class="form-group">
             <label for="deca-hora-carga">Hora de carga</label>
-            <input type="time" id="deca-hora-carga" value="${deca.hora_carga || ''}">
+            <input type="time" id="deca-hora-carga" value="${esc(deca.hora_carga)}">
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label for="deca-origen">Lugar de carga *</label>
-            <input type="text" id="deca-origen" required placeholder="Ciudad o dirección" value="${deca.origen || ''}">
+            <input type="text" id="deca-origen" required placeholder="Ciudad o dirección" value="${esc(deca.origen)}">
           </div>
           <div class="form-group">
             <label for="deca-destino">Lugar de descarga *</label>
-            <input type="text" id="deca-destino" required placeholder="Ciudad o dirección" value="${deca.destino || ''}">
+            <input type="text" id="deca-destino" required placeholder="Ciudad o dirección" value="${esc(deca.destino)}">
           </div>
         </div>
 
@@ -938,7 +938,7 @@ const Decas = {
         <div class="form-row">
           <div class="form-group">
             <label for="deca-cantidad">Cantidad *</label>
-            <input type="number" id="deca-cantidad" min="0" step="0.01" required placeholder="0" value="${deca.cantidad || deca.peso || ''}">
+            <input type="number" id="deca-cantidad" min="0" step="0.01" required placeholder="0" value="${esc(deca.cantidad || deca.peso)}">
           </div>
           <div class="form-group">
             <label for="deca-unidad">Unidad *</label>
@@ -962,7 +962,7 @@ const Decas = {
           <label for="deca-conductor">Conductor *</label>
           <select id="deca-conductor" required>
             <option value="">Seleccionar conductor</option>
-            ${todosConductores.map(c => `<option value="${c.id}" data-nombre="${c.nombre} ${c.apellidos}" data-dni="${c.dni || ''}">${c.nombre} ${c.apellidos}</option>`).join('')}
+            ${todosConductores.map(c => `<option value="${c.id}" data-nombre="${esc(c.nombre)} ${esc(c.apellidos)}" data-dni="${esc(c.dni)}">${esc(c.nombre)} ${esc(c.apellidos)}</option>`).join('')}
           </select>
         </div>
 
@@ -970,7 +970,7 @@ const Decas = {
           <label for="deca-vehiculo">Vehiculo *</label>
           <select id="deca-vehiculo" required>
             <option value="">Seleccionar vehiculo</option>
-            ${this.vehiculosActivos.map(v => `<option value="${v.id}" data-matricula="${v.matricula}">${v.matricula}${v.marca ? ' -- ' + v.marca : ''}${v.modelo ? ' ' + v.modelo : ''}</option>`).join('')}
+            ${this.vehiculosActivos.map(v => `<option value="${v.id}" data-matricula="${esc(v.matricula)}">${esc(v.matricula)}${v.marca ? ' -- ' + esc(v.marca) : ''}${v.modelo ? ' ' + esc(v.modelo) : ''}</option>`).join('')}
           </select>
         </div>
 
@@ -978,7 +978,7 @@ const Decas = {
           <label for="deca-remolque">Remolque</label>
           <select id="deca-remolque">
             <option value="">Sin remolque</option>
-            ${this.remolquesActivos.map(r => `<option value="${r.id}" data-matricula="${r.matricula}">${r.matricula}${r.marca ? ' -- ' + r.marca : ''}${r.modelo ? ' ' + r.modelo : ''}</option>`).join('')}
+            ${this.remolquesActivos.map(r => `<option value="${r.id}" data-matricula="${esc(r.matricula)}">${esc(r.matricula)}${r.marca ? ' -- ' + esc(r.marca) : ''}${r.modelo ? ' ' + esc(r.modelo) : ''}</option>`).join('')}
           </select>
         </div>
 
@@ -1126,9 +1126,9 @@ const Decas = {
         <div style="padding:8px 0; border-bottom:1px solid var(--gray-100);">
           <span style="font-size:11px; color:var(--gray-500); font-weight:600;">${c.label}</span>
           <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
-            <span style="font-size:12px; color:var(--danger); text-decoration:line-through;">${c.antes || '(vacio)'}</span>
+            <span style="font-size:12px; color:var(--danger); text-decoration:line-through;">${esc(c.antes) || '(vacio)'}</span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            <span style="font-size:12px; color:#059669; font-weight:600;">${c.despues || '(vacio)'}</span>
+            <span style="font-size:12px; color:#059669; font-weight:600;">${esc(c.despues) || '(vacio)'}</span>
           </div>
         </div>
       `).join('');
@@ -1136,7 +1136,7 @@ const Decas = {
     showModal('Confirmar cambios', `
       <div style="display:flex; flex-direction:column; gap:8px;">
         <div style="background:var(--warning-bg, #fef3c7); border-radius:8px; padding:10px 12px;">
-          <p style="font-size:12px; color:#92400e; font-weight:600;">${orig.referencia} -- Version ${orig.version} a ${orig.version + 1}</p>
+          <p style="font-size:12px; color:#92400e; font-weight:600;">${esc(orig.referencia)} -- Version ${orig.version} a ${orig.version + 1}</p>
           <p style="font-size:11px; color:#92400e;">${cambios.filter(c => !c.key.endsWith('_id')).length} campo(s) modificado(s)</p>
         </div>
         <div style="background:var(--gray-50); border-radius:10px; padding:12px; max-height:40vh; overflow-y:auto;">
