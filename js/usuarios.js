@@ -64,15 +64,15 @@ const Usuarios = {
     }
 
     container.innerHTML = this.list.map(user => {
-      const initials = (user.nombre[0] + (user.apellidos?.[0] || '')).toUpperCase();
+      const initials = ((user.nombre||'')[0] + (user.apellidos?.[0] || '')).toUpperCase();
       const isCurrentUser = user.user_id === Auth.currentUser.id;
 
       return `
         <div class="user-card" data-id="${user.id}">
-          <div class="user-avatar avatar-${user.rol}">${initials}</div>
+          <div class="user-avatar avatar-${esc(user.rol)}">${esc(initials)}</div>
           <div style="flex:1; min-width:0;">
-            <div style="font-weight:600; color:var(--fg);">${user.nombre} ${user.apellidos} ${isCurrentUser ? '<span style="color:var(--fg-muted)">(tú)</span>' : ''}</div>
-            <div style="font-size:13px; color:var(--fg-secondary);">${user.email || 'Sin email'} · ${user.dni || 'Sin DNI'}</div>
+            <div style="font-weight:600; color:var(--fg);">${esc(user.nombre)} ${esc(user.apellidos)} ${isCurrentUser ? '<span style="color:var(--fg-muted)">(tú)</span>' : ''}</div>
+            <div style="font-size:13px; color:var(--fg-secondary);">${esc(user.email) || 'Sin email'} · ${esc(user.dni) || 'Sin DNI'}</div>
           </div>
           <span class="badge badge-${user.activo ? 'activo' : 'inactivo'}">${user.activo ? user.rol : 'Inactivo'}</span>
         </div>
@@ -94,29 +94,29 @@ const Usuarios = {
       ? '<span class="badge badge-activo">Activo</span>'
       : '<span class="badge badge-inactivo">Inactivo</span>';
 
-    showModal(`${user.nombre} ${user.apellidos}`, `
+    showModal(`${esc(user.nombre)} ${esc(user.apellidos)}`, `
       <div style="display:flex; flex-direction:column; gap:16px;">
         <div style="display:flex; align-items:center; gap:12px;">
-          <div class="list-card-avatar avatar-${user.rol}" style="width:56px;height:56px;font-size:20px;">
-            ${(user.nombre[0] + (user.apellidos?.[0] || '')).toUpperCase()}
+          <div class="list-card-avatar avatar-${esc(user.rol)}" style="width:56px;height:56px;font-size:20px;">
+            ${esc(((user.nombre||'')[0] + (user.apellidos?.[0] || '')).toUpperCase())}
           </div>
           <div>
-            <span class="badge badge-${user.rol}" style="margin-bottom:4px;">${user.rol}</span>
+            <span class="badge badge-${esc(user.rol)}" style="margin-bottom:4px;">${esc(user.rol)}</span>
             ${statusBadge}
           </div>
         </div>
         <div style="display:grid; gap:8px;">
           <div>
             <span style="font-size:12px; color:var(--gray-500);">Email</span>
-            <p style="font-size:14px; font-weight:500;">${user.email || '—'}</p>
+            <p style="font-size:14px; font-weight:500;">${esc(user.email) || '—'}</p>
           </div>
           <div>
             <span style="font-size:12px; color:var(--gray-500);">DNI</span>
-            <p style="font-size:14px; font-weight:500;">${user.dni || '—'}</p>
+            <p style="font-size:14px; font-weight:500;">${esc(user.dni) || '—'}</p>
           </div>
           <div>
             <span style="font-size:12px; color:var(--gray-500);">Teléfono</span>
-            <p style="font-size:14px; font-weight:500;">${user.telefono || '—'}</p>
+            <p style="font-size:14px; font-weight:500;">${esc(user.telefono) || '—'}</p>
           </div>
           ${user.rol === 'conductor' ? `
           <div style="grid-column:1/-1; border-top:1px solid var(--border-light); padding-top:8px; margin-top:4px;">
@@ -140,7 +140,7 @@ const Usuarios = {
     `, `
       <button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>
       <button class="btn btn-primary" onclick="Usuarios.showForm('${user.id}')">Editar</button>
-      ${!isCurrentUser ? `<button class="btn btn-sm" style="background:#7c3aed; color:#fff; border:none;" onclick="Usuarios.resetPassword('${user.user_id}', '${user.nombre} ${user.apellidos}')">
+      ${!isCurrentUser ? `<button class="btn btn-sm" style="background:#7c3aed; color:#fff; border:none;" onclick="Usuarios.resetPassword('${user.user_id}', '${esc(user.nombre)} ${esc(user.apellidos)}')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         Restaurar clave
       </button>` : ''}
@@ -160,16 +160,16 @@ const Usuarios = {
         <div class="form-row">
           <div class="form-group">
             <label for="user-nombre">Nombre *</label>
-            <input type="text" id="user-nombre" required value="${user?.nombre || ''}">
+            <input type="text" id="user-nombre" required value="${esc(user?.nombre)}">
           </div>
           <div class="form-group">
             <label for="user-apellidos">Apellidos *</label>
-            <input type="text" id="user-apellidos" required value="${user?.apellidos || ''}">
+            <input type="text" id="user-apellidos" required value="${esc(user?.apellidos)}">
           </div>
         </div>
         <div class="form-group">
           <label for="user-email">Email *</label>
-          <input type="email" id="user-email" required value="${user?.email || ''}" ${isEdit ? 'disabled' : ''}>
+          <input type="email" id="user-email" required value="${esc(user?.email)}" ${isEdit ? 'disabled' : ''}>
           ${isEdit ? '<p style="font-size:11px; color:var(--gray-400); margin-top:2px;">El email no se puede cambiar</p>' : ''}
         </div>
         ${!isEdit ? `
@@ -181,11 +181,11 @@ const Usuarios = {
         <div class="form-row">
           <div class="form-group">
             <label for="user-dni">DNI</label>
-            <input type="text" id="user-dni" value="${user?.dni || ''}" placeholder="12345678A">
+            <input type="text" id="user-dni" value="${esc(user?.dni)}" placeholder="12345678A">
           </div>
           <div class="form-group">
             <label for="user-telefono">Teléfono</label>
-            <input type="tel" id="user-telefono" value="${user?.telefono || ''}" placeholder="600123456">
+            <input type="tel" id="user-telefono" value="${esc(user?.telefono)}" placeholder="600123456">
           </div>
         </div>
         <div class="form-group">
