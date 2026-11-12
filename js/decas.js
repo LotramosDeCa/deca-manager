@@ -136,7 +136,7 @@ const Decas = {
             <div class="deca-info">${d.origen || '?'} → ${d.destino || '?'}</div>
             <div class="deca-info">${fecha} · ${d.matricula_vehiculo || '—'} ${d.nombre_conductor ? '· ' + d.nombre_conductor : ''}</div>
           </div>
-          <span class="deca-status ${estadoClass}">${estadoLabel}</span>
+          <span class="badge ${estadoClass}" style="flex-shrink:0; font-size:11px;">${estadoLabel}</span>
         </div>
       `;
     }).join('');
