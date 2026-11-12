@@ -299,7 +299,7 @@ const App = {
 
     container.innerHTML = `
       <div class="greeting">
-        <h3>${greeting} ${Auth.currentProfile.nombre}</h3>
+        <h3>${greeting} ${esc(Auth.currentProfile.nombre)}</h3>
         <p>${dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}</p>
       </div>
       <div class="stats-grid">
@@ -467,12 +467,12 @@ const App = {
 
       return `
         <div class="deca-item" style="cursor:pointer;" onclick="App.navigate('decas')">
-          <span class="deca-ref">${d.referencia || '—'}</span>
+          <span class="deca-ref">${esc(d.referencia) || '—'}</span>
           <div class="deca-info">
-            <strong>${d.origen || '?'} → ${d.destino || '?'}</strong>
-            <span>${fecha} · ${d.nombre_conductor || ''}</span>
+            <strong>${esc(d.origen) || '?'} → ${esc(d.destino) || '?'}</strong>
+            <span>${fecha} · ${esc(d.nombre_conductor)}</span>
           </div>
-          <span class="deca-status" style="color:${dotColor};" title="${estadoLabel}">●</span>
+          <span class="deca-status" style="color:${dotColor};" title="${esc(estadoLabel)}">●</span>
         </div>
       `;
     }).join('');
@@ -574,8 +574,8 @@ const App = {
         <div style="display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--bg-card); border-radius:10px; border:1px solid var(--border-light); margin-bottom:6px;">
           <span style="background:${bg}; color:${color}; font-weight:700; font-size:11px; padding:3px 8px; border-radius:6px; white-space:nowrap;">${label}</span>
           <div style="flex:1; min-width:0;">
-            <div style="font-weight:600; font-size:14px; color:var(--fg);">${a.nombre}</div>
-            <div style="font-size:12px; color:var(--fg-secondary);">${a.tipo} · ${a.doc} · ${fecha}</div>
+            <div style="font-weight:600; font-size:14px; color:var(--fg);">${esc(a.nombre)}</div>
+            <div style="font-size:12px; color:var(--fg-secondary);">${esc(a.tipo)} · ${esc(a.doc)} · ${fecha}</div>
           </div>
         </div>
       `;
