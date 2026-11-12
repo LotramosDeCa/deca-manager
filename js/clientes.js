@@ -96,8 +96,8 @@ const Clientes = {
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="2" y1="9" x2="22" y2="9"/><line x1="8" y1="3" x2="8" y2="9"/></svg>
           </div>
           <div style="flex:1; min-width:0;">
-            <div style="font-weight:600; color:var(--fg);">${c.nombre}</div>
-            <div style="font-size:13px; color:var(--fg-secondary);">${c.nif || 'Sin NIF'}${c.poblacion ? ' · ' + c.poblacion : ''}</div>
+            <div style="font-weight:600; color:var(--fg);">${esc(c.nombre)}</div>
+            <div style="font-size:13px; color:var(--fg-secondary);">${esc(c.nif) || 'Sin NIF'}${c.poblacion ? ' · ' + esc(c.poblacion) : ''}</div>
           </div>
           <span class="badge badge-${c.activo ? 'activo' : 'inactivo'}">${c.activo ? 'Activo' : 'Inactivo'}</span>
         </div>
@@ -118,7 +118,7 @@ const Clientes = {
       ? '<span class="badge badge-activo">Activo</span>'
       : '<span class="badge badge-inactivo">Inactivo</span>';
 
-    showModal(c.nombre, `
+    showModal(esc(c.nombre), `
       <div style="display:flex; flex-direction:column; gap:16px;">
         <div style="display:flex; align-items:center; gap:12px;">
           <div class="list-card-icon" style="width:56px;height:56px;font-size:24px;">
@@ -129,27 +129,27 @@ const Clientes = {
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
           <div>
             <span style="font-size:12px; color:var(--gray-500);">Nombre</span>
-            <p style="font-size:14px; font-weight:600;">${c.nombre}</p>
+            <p style="font-size:14px; font-weight:600;">${esc(c.nombre)}</p>
           </div>
           <div>
             <span style="font-size:12px; color:var(--gray-500);">NIF</span>
-            <p style="font-size:14px; font-weight:500;">${c.nif || '—'}</p>
+            <p style="font-size:14px; font-weight:500;">${esc(c.nif) || '—'}</p>
           </div>
           <div style="grid-column:1/-1;">
             <span style="font-size:12px; color:var(--gray-500);">Dirección</span>
-            <p style="font-size:14px; font-weight:500;">${c.direccion || '—'}</p>
+            <p style="font-size:14px; font-weight:500;">${esc(c.direccion) || '—'}</p>
           </div>
           <div>
             <span style="font-size:12px; color:var(--gray-500);">Población</span>
-            <p style="font-size:14px; font-weight:500;">${c.poblacion || '—'}</p>
+            <p style="font-size:14px; font-weight:500;">${esc(c.poblacion) || '—'}</p>
           </div>
           <div>
             <span style="font-size:12px; color:var(--gray-500);">C.P.</span>
-            <p style="font-size:14px; font-weight:500;">${c.codigo_postal || '—'}</p>
+            <p style="font-size:14px; font-weight:500;">${esc(c.codigo_postal) || '—'}</p>
           </div>
           <div>
             <span style="font-size:12px; color:var(--gray-500);">Provincia</span>
-            <p style="font-size:14px; font-weight:500;">${c.provincia || '—'}</p>
+            <p style="font-size:14px; font-weight:500;">${esc(c.provincia) || '—'}</p>
           </div>
           <div>
             <span style="font-size:12px; color:var(--gray-500);">Registrado</span>
@@ -175,29 +175,29 @@ const Clientes = {
       <form id="cliente-form" style="display:flex; flex-direction:column; gap:4px;">
         <div class="form-group">
           <label for="cliente-nombre">Nombre / Razón social *</label>
-          <input type="text" id="cliente-nombre" required value="${item?.nombre || ''}" placeholder="Ej: Transportes García S.L.">
+          <input type="text" id="cliente-nombre" required value="${esc(item?.nombre)}" placeholder="Ej: Transportes García S.L.">
         </div>
         <div class="form-group">
           <label for="cliente-nif">NIF / CIF</label>
-          <input type="text" id="cliente-nif" value="${item?.nif || ''}" placeholder="Ej: B12345678" style="text-transform:uppercase;">
+          <input type="text" id="cliente-nif" value="${esc(item?.nif)}" placeholder="Ej: B12345678" style="text-transform:uppercase;">
         </div>
         <div class="form-group">
           <label for="cliente-direccion">Dirección</label>
-          <input type="text" id="cliente-direccion" value="${item?.direccion || ''}" placeholder="Ej: C/ Mayor, 10">
+          <input type="text" id="cliente-direccion" value="${esc(item?.direccion)}" placeholder="Ej: C/ Mayor, 10">
         </div>
         <div class="form-row">
           <div class="form-group">
             <label for="cliente-poblacion">Población</label>
-            <input type="text" id="cliente-poblacion" value="${item?.poblacion || ''}" placeholder="Ej: Madrid">
+            <input type="text" id="cliente-poblacion" value="${esc(item?.poblacion)}" placeholder="Ej: Madrid">
           </div>
           <div class="form-group">
             <label for="cliente-cp">C. Postal</label>
-            <input type="text" id="cliente-cp" value="${item?.codigo_postal || ''}" placeholder="28001" maxlength="5">
+            <input type="text" id="cliente-cp" value="${esc(item?.codigo_postal)}" placeholder="28001" maxlength="5">
           </div>
         </div>
         <div class="form-group">
           <label for="cliente-provincia">Provincia</label>
-          <input type="text" id="cliente-provincia" value="${item?.provincia || ''}" placeholder="Ej: Madrid">
+          <input type="text" id="cliente-provincia" value="${esc(item?.provincia)}" placeholder="Ej: Madrid">
         </div>
         <div id="cliente-form-error" class="error-msg" hidden></div>
       </form>
