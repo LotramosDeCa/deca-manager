@@ -35,12 +35,125 @@ const App = {
       const s = await supabase.auth.getSession();
       this._authToken = s?.data?.session?.access_token || SUPABASE_ANON_KEY;
     } catch(e) { this._authToken = SUPABASE_ANON_KEY; }
+
+    // ── Forzar cambio de contraseña si el admin la restauró ──
+    if (Auth.currentProfile?.debe_cambiar_password) {
+      this._showForzarCambioPassword();
+      return; // No mostrar la app hasta que cambie la clave
+    }
+
     this.updateHeader();
     this.buildBottomNav();
     this._alertas = [];
     document.getElementById('bell-btn').addEventListener('click', () => this.showAlertasModal());
     this.loadAlertasBell(); // Cargar alertas en paralelo (no bloquea)
     this.navigate('dashboard');
+  },
+
+  // ── Modal forzar cambio de contraseña ──
+  _showForzarCambioPassword() {
+    document.getElementById('app-screen').classList.remove('active');
+    document.getElementById('login-screen').classList.remove('active');
+
+    // Crear overlay si no existe
+    let overlay = document.getElementById('force-password-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'force-password-overlay';
+      overlay.style.cssText = `
+        position:fixed; top:0; left:0; right:0; bottom:0; z-index:10000;
+        background:var(--bg, #f5f7fa);
+        display:flex; align-items:center; justify-content:center;
+        padding:24px;
+      `;
+      document.body.appendChild(overlay);
+    }
+
+    overlay.innerHTML = `
+      <div style="width:100%; max-width:380px; background:var(--bg-card, #fff); border-radius:16px; padding:28px; box-shadow:0 4px 24px rgba(0,0,0,0.12);">
+        <div style="text-align:center; margin-bottom:20px;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--primary, #1a56db)" stroke-width="1.5" style="margin-bottom:8px;">
+            <rect x="3" y="11" width="18" height="11" rx="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <h2 style="font-size:18px; font-weight:700; color:var(--fg, #111);">Cambiar contraseña</h2>
+          <p style="font-size:13px; color:var(--fg-secondary, #666); margin-top:4px;">Tu contraseña ha sido restaurada por el administrador. Debes crear una nueva para continuar.</p>
+        </div>
+        <form id="force-password-form" style="display:flex; flex-direction:column; gap:12px;">
+          <div class="form-group">
+            <label for="new-pass-1" style="font-size:13px; font-weight:600;">Nueva contraseña</label>
+            <input type="password" id="new-pass-1" required minlength="6" placeholder="Mínimo 6 caracteres" style="width:100%;">
+          </div>
+          <div class="form-group">
+            <label for="new-pass-2" style="font-size:13px; font-weight:600;">Repetir contraseña</label>
+            <input type="password" id="new-pass-2" required minlength="6" placeholder="Repite la contraseña" style="width:100%;">
+          </div>
+          <div id="force-pass-error" class="error-msg" hidden></div>
+          <button type="submit" class="btn btn-primary" id="force-pass-btn" style="width:100%; justify-content:center; padding:12px;">
+            <span class="btn-text">Guardar nueva contraseña</span>
+            <span class="btn-spinner" hidden></span>
+          </button>
+        </form>
+      </div>
+    `;
+
+    document.getElementById('force-password-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const pass1 = document.getElementById('new-pass-1').value;
+      const pass2 = document.getElementById('new-pass-2').value;
+      const errEl = document.getElementById('force-pass-error');
+      const btn = document.getElementById('force-pass-btn');
+
+      errEl.hidden = true;
+
+      if (pass1 !== pass2) {
+        errEl.textContent = 'Las contraseñas no coinciden';
+        errEl.hidden = false;
+        return;
+      }
+      if (pass1.length < 6) {
+        errEl.textContent = 'La contraseña debe tener al menos 6 caracteres';
+        errEl.hidden = false;
+        return;
+      }
+      if (pass1 === '123456') {
+        errEl.textContent = 'Elige una contraseña diferente a la genérica';
+        errEl.hidden = false;
+        return;
+      }
+
+      btn.disabled = true;
+      btn.querySelector('.btn-text').textContent = 'Guardando...';
+      btn.querySelector('.btn-spinner').hidden = false;
+
+      try {
+        // Cambiar contraseña en Supabase Auth
+        const { error } = await supabase.auth.updateUser({ password: pass1 });
+        if (error) throw new Error(error.message);
+
+        // Quitar el flag debe_cambiar_password
+        const { error: profileErr } = await sbUpdate('profiles',
+          'id=eq.' + Auth.currentProfile.id,
+          { debe_cambiar_password: false }
+        );
+        if (profileErr) console.error('Error quitando flag:', profileErr);
+
+        // Actualizar perfil local
+        Auth.currentProfile.debe_cambiar_password = false;
+
+        // Quitar overlay y continuar
+        overlay.remove();
+        showToast('Contraseña actualizada correctamente');
+        this.showApp();
+      } catch (err) {
+        errEl.textContent = err.message;
+        errEl.hidden = false;
+      } finally {
+        btn.disabled = false;
+        btn.querySelector('.btn-text').textContent = 'Guardar nueva contraseña';
+        btn.querySelector('.btn-spinner').hidden = true;
+      }
+    });
   },
 
   // ====== HEADER ======
