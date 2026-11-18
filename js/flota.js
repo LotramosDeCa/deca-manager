@@ -200,6 +200,10 @@ const Flota = {
             <span style="font-size:12px; color:var(--gray-500);">MMA (kg)</span>
             <p style="font-size:14px; font-weight:500;">${item.mma ? Number(item.mma).toLocaleString('es-ES') : '—'}</p>
           </div>
+          <div>
+            <span style="font-size:12px; color:var(--gray-500);">N.º autorización</span>
+            <p style="font-size:14px; font-weight:500;">${esc(item.num_autorizacion) || '—'}</p>
+          </div>
           ` : ''}
           <div style="grid-column: 1/-1; border-top:1px solid var(--border-light); padding-top:12px; margin-top:4px;">
             <span style="font-size:13px; font-weight:600; color:var(--fg);">Caducidades</span>
@@ -291,7 +295,10 @@ const Flota = {
             <label for="flota-mma">MMA (kg)</label>
             <input type="number" id="flota-mma" min="0" step="0.01" value="${item?.mma || ''}" placeholder="40000">
           </div>
-          <div class="form-group"></div>
+          <div class="form-group">
+            <label for="flota-num-autorizacion">N.º autorización</label>
+            <input type="text" id="flota-num-autorizacion" value="${esc(item?.num_autorizacion)}" placeholder="Tarjeta de transporte">
+          </div>
         </div>
         ` : ''}
         <p style="font-size:13px; font-weight:600; color:var(--fg); margin-top:8px;">Fechas de caducidad</p>
@@ -359,10 +366,11 @@ const Flota = {
       fecha_seguro: document.getElementById('flota-fecha-seguro').value || null,
     };
 
-    // Vehículos tienen también MMA y tarjeta transporte
+    // Vehículos tienen también MMA, tarjeta transporte y nº autorización
     if (isVehiculo) {
       record.mma = document.getElementById('flota-mma').value ? parseFloat(document.getElementById('flota-mma').value) : null;
       record.fecha_tarjeta_transporte = document.getElementById('flota-fecha-tarjeta').value || null;
+      record.num_autorizacion = document.getElementById('flota-num-autorizacion').value.trim() || null;
     }
 
     btn.disabled = true;
@@ -416,10 +424,11 @@ const Flota = {
       fecha_seguro: document.getElementById('flota-fecha-seguro').value || null,
     };
 
-    // Vehículos tienen también MMA y tarjeta transporte
+    // Vehículos tienen también MMA, tarjeta transporte y nº autorización
     if (isVehiculo) {
       updates.mma = document.getElementById('flota-mma').value ? parseFloat(document.getElementById('flota-mma').value) : null;
       updates.fecha_tarjeta_transporte = document.getElementById('flota-fecha-tarjeta').value || null;
+      updates.num_autorizacion = document.getElementById('flota-num-autorizacion').value.trim() || null;
     }
 
     btn.disabled = true;
