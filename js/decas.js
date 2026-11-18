@@ -1764,13 +1764,14 @@ const Decas = {
   // ====== EXPORTAR A EXCEL ======
   async showExportModal() {
     // Cargar listas para los selects
-    const [conductoresRes, vehiculosRes, clientesRes] = await Promise.all([
+    const [conductoresRes, adminsRes, vehiculosRes, clientesRes] = await Promise.all([
       sbSelect('profiles', 'select=id,nombre,apellidos&activo=eq.true&rol=eq.conductor&order=nombre.asc'),
-      sbSelect('vehiculos', 'select=id,matricula&activo=eq.true&tipo=eq.vehiculo&order=matricula.asc'),
+      sbSelect('profiles', 'select=id,nombre,apellidos&activo=eq.true&rol=eq.admin&order=nombre.asc'),
+      sbSelect('vehiculos', 'select=id,matricula&activo=eq.true&order=matricula.asc'),
       sbSelect('clientes', 'select=id,nombre&activo=eq.true&order=nombre.asc')
     ]);
 
-    const conductores = conductoresRes.data || [];
+    const conductores = [...(conductoresRes.data || []), ...(adminsRes.data || [])];
     const vehiculos = vehiculosRes.data || [];
     const clientes = clientesRes.data || [];
 
