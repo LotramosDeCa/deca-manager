@@ -800,7 +800,7 @@ const Decas = {
         <p style="font-size:13px; color:#6b7280; margin-bottom:20px;">${d.origen || '?'} → ${d.destino || '?'} · ${d.fecha_transporte ? new Date(d.fecha_transporte).toLocaleDateString('es-ES') : '—'}</p>
         <canvas id="qr-canvas-full" style="width:260px; height:260px; border:3px solid #e5e7eb; border-radius:12px; padding:12px; background:white;"></canvas>
         <p style="font-size:12px; color:#9ca3af; margin-top:12px;">Escanear para descargar el documento DeCA</p>
-        <p style="font-size:11px; color:#d1d5db; margin-top:4px;">Conforme a Orden TRM/282/2026</p>
+        <p style="font-size:11px; color:#d1d5db; margin-top:4px;">Conforme a Orden FOM/2861/2012 mod. por Orden TRM/282/2026</p>
         <button id="qr-close-btn" style="
           margin-top:24px; padding:14px 40px;
           background:#1a56db; color:white; border:none; border-radius:10px;
@@ -1437,7 +1437,7 @@ const Decas = {
       doc.text('Documento Electronico de Control Administrativo (DeCA)', pw / 2, 19, { align: 'center' });
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
-      doc.text('Conforme a la Orden TRM/282/2026', pw / 2, 25, { align: 'center' });
+      doc.text('Conforme a Orden FOM/2861/2012 mod. por Orden TRM/282/2026 y Ley 9/2025 de Movilidad Sostenible', pw / 2, 25, { align: 'center' });
 
       y = 33;
 
@@ -1690,13 +1690,25 @@ const Decas = {
       const totalPages = doc.internal.getNumberOfPages();
       for (let p = 1; p <= totalPages; p++) {
         doc.setPage(p);
-        const footerY = 282;
+        const footerY = 272;
         doc.setDrawColor(200, 200, 200);
         doc.line(m, footerY, pw - m, footerY);
-        doc.setFontSize(7);
+
+        // Linea 1: texto legal de cumplimiento normativo
+        doc.setFontSize(6);
+        doc.setTextColor(130, 130, 130);
+        const legalLine1 = 'Documento de Control Administrativo (DeCA) emitido conforme a la Orden FOM/2861/2012, de 13 de diciembre,';
+        const legalLine2 = 'modificada por la Orden TRM/282/2026, de 25 de marzo, y la Ley 9/2025, de 3 de diciembre, de Movilidad Sostenible.';
+        const legalLine3 = 'Formato digital segun Resolucion de 5 de junio de 2026 de la D.G. de Transporte por Carretera y Ferrocarril (BOE-A-2026-12784).';
+        doc.text(legalLine1, pw / 2, footerY + 3, { align: 'center' });
+        doc.text(legalLine2, pw / 2, footerY + 6, { align: 'center' });
+        doc.text(legalLine3, pw / 2, footerY + 9, { align: 'center' });
+
+        // Linea 2: referencia, pagina y fecha
+        doc.setFontSize(6.5);
         doc.setTextColor(150, 150, 150);
-        doc.text(`Generado por DeCA Manager -- ${new Date().toLocaleString('es-ES')}`, m, footerY + 4);
-        doc.text(`Ref: ${d.referencia} | Pag. ${p}/${totalPages} | Conforme a Orden TRM/282/2026`, pw - m, footerY + 4, { align: 'right' });
+        doc.text(`Ref: ${d.referencia} | Pag. ${p}/${totalPages}`, m, footerY + 14);
+        doc.text(`Generado por DeCA Manager -- ${new Date().toLocaleString('es-ES')}`, pw - m, footerY + 14, { align: 'right' });
       }
 
       // ========== DESCARGAR (si no es solo para email) ==========
