@@ -1028,9 +1028,10 @@ body {
 .modal-footer {
   padding: 16px 20px 24px;
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
-.modal-footer .btn { flex: 1; }
+.modal-footer .btn { flex: 1 1 auto; min-width: calc(50% - 6px); }
 
 /* ====== TABS BAR ====== */
 .tabs-bar {
