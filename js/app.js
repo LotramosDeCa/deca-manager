@@ -630,7 +630,7 @@ const App = {
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const email = document.getElementById('login-email').value.trim();
+      let input = document.getElementById('login-email').value.trim();
       const password = document.getElementById('login-password').value;
 
       error.hidden = true;
@@ -639,6 +639,12 @@ const App = {
       btn.querySelector('.btn-spinner').hidden = false;
 
       try {
+        // Si no tiene @, es un username → buscar el email real
+        let email = input;
+        if (!input.includes('@')) {
+          email = await Auth.resolveUsername(input);
+          if (!email) throw new Error('Usuario no encontrado');
+        }
         await Auth.login(email, password);
         // onAuthStateChange se encarga del resto
       } catch (err) {
@@ -648,6 +654,37 @@ const App = {
         btn.disabled = false;
         btn.querySelector('.btn-text').textContent = 'Iniciar sesión';
         btn.querySelector('.btn-spinner').hidden = true;
+      }
+    });
+
+    // "¿Olvidaste tu contraseña?"
+    document.getElementById('forgot-password-link')?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      let input = document.getElementById('login-email').value.trim();
+      if (!input) {
+        error.textContent = 'Escribe tu usuario o email primero';
+        error.hidden = false;
+        return;
+      }
+
+      // Si es username, resolver a email
+      let email = input;
+      if (!input.includes('@')) {
+        try {
+          email = await Auth.resolveUsername(input);
+          if (!email) { error.textContent = 'Usuario no encontrado'; error.hidden = false; return; }
+        } catch (err) {
+          error.textContent = 'Error buscando usuario'; error.hidden = false; return;
+        }
+      }
+
+      try {
+        await Auth.forgotPassword(email);
+        error.hidden = true;
+        showToast('Se ha enviado un email para restablecer la contraseña', 'success');
+      } catch (err) {
+        error.textContent = err.message;
+        error.hidden = false;
       }
     });
 
