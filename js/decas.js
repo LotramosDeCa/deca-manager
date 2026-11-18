@@ -12,7 +12,6 @@ const Decas = {
     nombre: 'Lotramos SL',
     nif: 'B45849353',
     direccion: 'AV. Principe, 82 - 45692 Malpica de Tajo',
-    num_autorizacion: '', // Alberto rellenará su nº autorización
   },
 
   // ====== RENDERIZAR VISTA PRINCIPAL ======
@@ -358,7 +357,7 @@ const Decas = {
 
     // Cargar vehículos, remolques, conductores y clientes en paralelo
     const [vehiculos, remolques, conductores, clientesRes, mercanciasRes] = await Promise.all([
-      sbSelect('vehiculos', 'select=id,matricula,marca,modelo&activo=eq.true&order=matricula.asc'),
+      sbSelect('vehiculos', 'select=id,matricula,marca,modelo,num_autorizacion&activo=eq.true&order=matricula.asc'),
       sbSelect('remolques', 'select=id,matricula,marca,modelo&activo=eq.true&order=matricula.asc'),
       sbSelect('profiles', 'select=id,user_id,nombre,apellidos,dni&activo=eq.true&rol=eq.conductor&order=nombre.asc'),
       sbSelect('clientes', 'select=id,nombre,nif,direccion,poblacion,codigo_postal,provincia&activo=eq.true&order=nombre.asc'),
@@ -481,7 +480,7 @@ const Decas = {
           <label for="deca-vehiculo">Vehiculo *</label>
           <select id="deca-vehiculo" required>
             <option value="">Seleccionar vehiculo</option>
-            ${this.vehiculosActivos.map(v => `<option value="${v.id}" data-matricula="${esc(v.matricula)}">${esc(v.matricula)}${v.marca ? ' -- ' + esc(v.marca) : ''}${v.modelo ? ' ' + esc(v.modelo) : ''}</option>`).join('')}
+            ${this.vehiculosActivos.map(v => `<option value="${v.id}" data-matricula="${esc(v.matricula)}" data-num-autorizacion="${esc(v.num_autorizacion)}">${esc(v.matricula)}${v.marca ? ' -- ' + esc(v.marca) : ''}${v.modelo ? ' ' + esc(v.modelo) : ''}</option>`).join('')}
           </select>
         </div>
 
@@ -555,6 +554,7 @@ const Decas = {
       // Vehiculo y conductor
       vehiculo_id: vehiculoSelect.value,
       matricula_vehiculo: vehiculoOption?.dataset.matricula || '',
+      num_autorizacion: vehiculoOption?.dataset.numAutorizacion || '',
       remolque_id: remolqueSelect.value || null,
       matricula_remolque: remolqueOption?.dataset.matricula || null,
       conductor_id: conductorSelect.value,
@@ -699,7 +699,7 @@ const Decas = {
         dni_conductor: r.dni_conductor,
         empresa: this.EMPRESA.nombre,
         nif_empresa: this.EMPRESA.nif || null,
-        num_autorizacion: this.EMPRESA.num_autorizacion || null,
+        num_autorizacion: r.num_autorizacion || null,
         qr_code: qrUrl,
         creado_por: Auth.currentProfile.id,
       };
@@ -845,7 +845,7 @@ const Decas = {
 
     // Cargar listas en paralelo
     const [vehiculos, remolques, conductores, clientesRes, mercanciasRes] = await Promise.all([
-      sbSelect('vehiculos', 'select=id,matricula,marca,modelo&activo=eq.true&order=matricula.asc'),
+      sbSelect('vehiculos', 'select=id,matricula,marca,modelo,num_autorizacion&activo=eq.true&order=matricula.asc'),
       sbSelect('remolques', 'select=id,matricula,marca,modelo&activo=eq.true&order=matricula.asc'),
       sbSelect('profiles', 'select=id,user_id,nombre,apellidos,dni&activo=eq.true&rol=eq.conductor&order=nombre.asc'),
       sbSelect('clientes', 'select=id,nombre,nif,direccion,poblacion,codigo_postal,provincia&activo=eq.true&order=nombre.asc'),
@@ -970,7 +970,7 @@ const Decas = {
           <label for="deca-vehiculo">Vehiculo *</label>
           <select id="deca-vehiculo" required>
             <option value="">Seleccionar vehiculo</option>
-            ${this.vehiculosActivos.map(v => `<option value="${v.id}" data-matricula="${esc(v.matricula)}">${esc(v.matricula)}${v.marca ? ' -- ' + esc(v.marca) : ''}${v.modelo ? ' ' + esc(v.modelo) : ''}</option>`).join('')}
+            ${this.vehiculosActivos.map(v => `<option value="${v.id}" data-matricula="${esc(v.matricula)}" data-num-autorizacion="${esc(v.num_autorizacion)}">${esc(v.matricula)}${v.marca ? ' -- ' + esc(v.marca) : ''}${v.modelo ? ' ' + esc(v.modelo) : ''}</option>`).join('')}
           </select>
         </div>
 
@@ -1061,6 +1061,7 @@ const Decas = {
       direccion_destinatario: destinatarioOption?.dataset.direccion || '',
       vehiculo_id: vehiculoSelect.value,
       matricula_vehiculo: vehiculoOption?.dataset.matricula || '',
+      num_autorizacion: vehiculoOption?.dataset.numAutorizacion || '',
       remolque_id: remolqueSelect.value || null,
       matricula_remolque: remolqueOption?.dataset.matricula || null,
       conductor_id: conductorSelect.value,
@@ -1086,6 +1087,7 @@ const Decas = {
       { key: 'nombre_conductor', label: 'Conductor' },
       { key: 'dni_conductor', label: 'DNI Conductor' },
       { key: 'matricula_vehiculo', label: 'Vehiculo' },
+      { key: 'num_autorizacion', label: 'N. autorizacion' },
       { key: 'matricula_remolque', label: 'Remolque' },
     ];
 
@@ -1216,6 +1218,7 @@ const Decas = {
         direccion_destinatario: newData.direccion_destinatario,
         vehiculo_id: newData.vehiculo_id,
         matricula_vehiculo: newData.matricula_vehiculo,
+        num_autorizacion: newData.num_autorizacion || null,
         remolque_id: newData.remolque_id,
         matricula_remolque: newData.matricula_remolque,
         conductor_id: newData.conductor_id,
@@ -1451,8 +1454,8 @@ const Decas = {
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...GRAY);
       doc.text(`Version: ${d.version || 1}`, pw - m - 4, y + 13, { align: 'right' });
-      if (this.EMPRESA.num_autorizacion) {
-        doc.text(`Aut: ${this.EMPRESA.num_autorizacion}`, pw - m - 4, y + 18, { align: 'right' });
+      if (d.num_autorizacion) {
+        doc.text(`Aut: ${d.num_autorizacion}`, pw - m - 4, y + 18, { align: 'right' });
       }
 
       y += 27;
@@ -1528,8 +1531,7 @@ const Decas = {
       row('Nombre / Razon social', d.empresa, col1, halfW);
       row('NIF', d.nif_empresa, col2, halfW);
       y += 8;
-      row('Direccion', this.EMPRESA.direccion, col1, halfW);
-      row('N. autorizacion', d.num_autorizacion || '--', col2, halfW);
+      row('Direccion', this.EMPRESA.direccion, col1, cw - 6);
       y += 12;
 
       // ========== SECCION: ENVIO ==========
@@ -1554,6 +1556,8 @@ const Decas = {
 
       row('Matricula vehiculo', d.matricula_vehiculo, col1, halfW);
       row('Matricula remolque', d.matricula_remolque || 'N/A', col2, halfW);
+      y += 8;
+      row('N. autorizacion', d.num_autorizacion || '--', col1, halfW);
       y += 8;
       row('Conductor', d.nombre_conductor, col1, halfW);
       row('DNI / NIE', d.dni_conductor, col2, halfW);
