@@ -105,6 +105,29 @@ const Auth = {
     return `${this.currentProfile.nombre} ${this.currentProfile.apellidos}`;
   },
 
+  // Buscar email por nombre de usuario (RPC pública)
+  async resolveUsername(username) {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/rpc/get_email_by_username', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify({ p_username: username })
+    });
+    if (!res.ok) return null;
+    const email = await res.json();
+    return email || null;
+  },
+
+  // Enviar email de restablecer contraseña
+  async forgotPassword(email) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/reset-password.html'
+    });
+    if (error) throw new Error(this.translateError(error.message));
+  },
+
   // Traducir errores de Supabase
   translateError(msg) {
     const map = {
@@ -112,6 +135,7 @@ const Auth = {
       'Email not confirmed': 'Email no confirmado',
       'Too many requests': 'Demasiados intentos. Espera un momento.',
       'User not found': 'Usuario no encontrado',
+      'For security purposes, you can only request this once every 60 seconds': 'Solo puedes solicitar esto una vez por minuto',
     };
     return map[msg] || msg;
   }
