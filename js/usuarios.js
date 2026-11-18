@@ -72,7 +72,7 @@ const Usuarios = {
           <div class="user-avatar avatar-${esc(user.rol)}">${esc(initials)}</div>
           <div style="flex:1; min-width:0;">
             <div style="font-weight:600; color:var(--fg);">${esc(user.nombre)} ${esc(user.apellidos)} ${isCurrentUser ? '<span style="color:var(--fg-muted)">(tú)</span>' : ''}</div>
-            <div style="font-size:13px; color:var(--fg-secondary);">${esc(user.email) || 'Sin email'} · ${esc(user.dni) || 'Sin DNI'}</div>
+            <div style="font-size:13px; color:var(--fg-secondary);">${user.username ? esc(user.username) + ' · ' : ''}${esc(user.email) || 'Sin email'}</div>
           </div>
           <span class="badge badge-${user.activo ? 'activo' : 'inactivo'}">${user.activo ? user.rol : 'Inactivo'}</span>
         </div>
@@ -106,6 +106,10 @@ const Usuarios = {
           </div>
         </div>
         <div style="display:grid; gap:8px;">
+          ${user.username ? `<div>
+            <span style="font-size:12px; color:var(--gray-500);">Usuario</span>
+            <p style="font-size:14px; font-weight:500;">${esc(user.username)}</p>
+          </div>` : ''}
           <div>
             <span style="font-size:12px; color:var(--gray-500);">Email</span>
             <p style="font-size:14px; font-weight:500;">${esc(user.email) || '—'}</p>
@@ -167,10 +171,17 @@ const Usuarios = {
             <input type="text" id="user-apellidos" required value="${esc(user?.apellidos)}">
           </div>
         </div>
-        <div class="form-group">
-          <label for="user-email">Email *</label>
-          <input type="email" id="user-email" required value="${esc(user?.email)}" ${isEdit ? 'disabled' : ''}>
-          ${isEdit ? '<p style="font-size:11px; color:var(--gray-400); margin-top:2px;">El email no se puede cambiar</p>' : ''}
+        <div class="form-row">
+          <div class="form-group">
+            <label for="user-username">Nombre de usuario</label>
+            <input type="text" id="user-username" value="${esc(user?.username)}" placeholder="ej: juan.garcia" pattern="[a-zA-Z0-9._-]+" title="Solo letras, números, puntos, guiones">
+            <p style="font-size:11px; color:var(--gray-400); margin-top:2px;">Para iniciar sesión sin email</p>
+          </div>
+          <div class="form-group">
+            <label for="user-email">Email *</label>
+            <input type="email" id="user-email" required value="${esc(user?.email)}" ${isEdit ? 'disabled' : ''}>
+            ${isEdit ? '<p style="font-size:11px; color:var(--gray-400); margin-top:2px;">El email no se puede cambiar</p>' : ''}
+          </div>
         </div>
         ${!isEdit ? `
         <div class="form-group">
@@ -240,6 +251,7 @@ const Usuarios = {
     const password = document.getElementById('user-password').value;
     const nombre = document.getElementById('user-nombre').value.trim();
     const apellidos = document.getElementById('user-apellidos').value.trim();
+    const username = document.getElementById('user-username').value.trim() || null;
     const dni = document.getElementById('user-dni').value.trim();
     const telefono = document.getElementById('user-telefono').value.trim();
     const rol = document.getElementById('user-rol').value;
@@ -257,7 +269,7 @@ const Usuarios = {
           'Authorization': 'Bearer ' + sbToken(),
           'apikey': SUPABASE_ANON_KEY
         },
-        body: JSON.stringify({ email, password, nombre, apellidos, dni, telefono, rol })
+        body: JSON.stringify({ email, password, nombre, apellidos, username, dni, telefono, rol })
       });
 
       const data = await res.json();
@@ -288,6 +300,7 @@ const Usuarios = {
     const updates = {
       nombre: document.getElementById('user-nombre').value.trim(),
       apellidos: document.getElementById('user-apellidos').value.trim(),
+      username: document.getElementById('user-username').value.trim() || null,
       dni: document.getElementById('user-dni').value.trim() || null,
       telefono: document.getElementById('user-telefono').value.trim() || null,
       rol: document.getElementById('user-rol').value,
