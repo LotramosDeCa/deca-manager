@@ -21,10 +21,16 @@ const Decas = {
     container.innerHTML = `
       <div class="section-header">
         <h3>${isAdmin ? 'Todas las DeCA' : 'Mis DeCA'}</h3>
-        <button class="btn btn-primary btn-sm" id="btn-crear-deca">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nueva DeCA
-        </button>
+        <div style="display:flex; gap:6px;">
+          ${isAdmin ? `<button class="btn btn-sm" id="btn-exportar-decas" style="background:var(--bg-card); border:1px solid var(--border); color:var(--fg);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Excel
+          </button>` : ''}
+          <button class="btn btn-primary btn-sm" id="btn-crear-deca">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nueva DeCA
+          </button>
+        </div>
       </div>
       <div class="search-inline" style="margin-bottom:8px;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -56,6 +62,7 @@ const Decas = {
     `;
 
     document.getElementById('btn-crear-deca')?.addEventListener('click', () => this.showForm());
+    document.getElementById('btn-exportar-decas')?.addEventListener('click', () => this.showExportModal());
 
     document.getElementById('deca-search').addEventListener('input', (e) => {
       this._searchQuery = e.target.value.trim().toLowerCase();
@@ -1751,6 +1758,208 @@ const Decas = {
     } catch (err) {
       console.error('Error enviando email:', err);
       showToast('DeCA creada, pero falló el envío por email', 'warning');
+    }
+  },
+
+  // ====== EXPORTAR A EXCEL ======
+  async showExportModal() {
+    // Cargar listas para los selects
+    const [conductoresRes, vehiculosRes, clientesRes] = await Promise.all([
+      sbSelect('profiles', 'select=id,nombre,apellidos&activo=eq.true&rol=eq.conductor&order=nombre.asc'),
+      sbSelect('vehiculos', 'select=id,matricula&activo=eq.true&tipo=eq.vehiculo&order=matricula.asc'),
+      sbSelect('clientes', 'select=id,nombre&activo=eq.true&order=nombre.asc')
+    ]);
+
+    const conductores = conductoresRes.data || [];
+    const vehiculos = vehiculosRes.data || [];
+    const clientes = clientesRes.data || [];
+
+    const hoy = new Date();
+    const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
+    const hoyStr = hoy.toISOString().split('T')[0];
+
+    showModal('Exportar DeCA a Excel', `
+      <form id="export-form" style="display:flex; flex-direction:column; gap:12px;">
+        <p style="font-size:13px; color:var(--fg-secondary); margin:0;">Selecciona los filtros para la exportación</p>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="export-desde">Desde</label>
+            <input type="date" id="export-desde" value="${primerDiaMes}">
+          </div>
+          <div class="form-group">
+            <label for="export-hasta">Hasta</label>
+            <input type="date" id="export-hasta" value="${hoyStr}">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="export-estado">Estado</label>
+            <select id="export-estado">
+              <option value="">Todos</option>
+              <option value="activo">Activa</option>
+              <option value="modificado">Modificada</option>
+              <option value="finalizado">Finalizada</option>
+              <option value="anulado">Anulada</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="export-conductor">Conductor</label>
+            <select id="export-conductor">
+              <option value="">Todos</option>
+              ${conductores.map(c => `<option value="${c.id}">${esc(c.nombre)} ${esc(c.apellidos)}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="export-vehiculo">Vehículo</label>
+            <select id="export-vehiculo">
+              <option value="">Todos</option>
+              ${vehiculos.map(v => `<option value="${v.id}">${esc(v.matricula)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="export-cliente">Cliente (cargador)</label>
+            <select id="export-cliente">
+              <option value="">Todos</option>
+              ${clientes.map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+
+        <div id="export-preview" style="font-size:13px; color:var(--fg-muted); text-align:center; padding:8px; background:var(--bg); border-radius:8px;">
+          Calculando...
+        </div>
+      </form>
+    `, `
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" id="export-btn" style="background:#16a34a; border-color:#16a34a;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle; margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span class="btn-text">Exportar</span>
+        <span class="btn-spinner" hidden></span>
+      </button>
+    `);
+
+    // Preview counter
+    const updatePreview = () => {
+      const filters = this._getExportFilters();
+      const filtered = this._filterDecasForExport(filters);
+      const el = document.getElementById('export-preview');
+      if (el) el.textContent = `${filtered.length} DeCA${filtered.length !== 1 ? 's' : ''} encontrada${filtered.length !== 1 ? 's' : ''}`;
+    };
+
+    ['export-desde', 'export-hasta', 'export-estado', 'export-conductor', 'export-vehiculo', 'export-cliente'].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', updatePreview);
+    });
+
+    updatePreview();
+
+    document.getElementById('export-btn')?.addEventListener('click', () => this.ejecutarExport());
+  },
+
+  _getExportFilters() {
+    return {
+      desde: document.getElementById('export-desde')?.value || '',
+      hasta: document.getElementById('export-hasta')?.value || '',
+      estado: document.getElementById('export-estado')?.value || '',
+      conductorId: document.getElementById('export-conductor')?.value || '',
+      vehiculoId: document.getElementById('export-vehiculo')?.value || '',
+      clienteId: document.getElementById('export-cliente')?.value || '',
+    };
+  },
+
+  _filterDecasForExport(filters) {
+    let items = this.list;
+    if (filters.desde) items = items.filter(d => d.fecha_transporte && d.fecha_transporte >= filters.desde);
+    if (filters.hasta) items = items.filter(d => d.fecha_transporte && d.fecha_transporte <= filters.hasta);
+    if (filters.estado) items = items.filter(d => d.estado === filters.estado);
+    if (filters.conductorId) items = items.filter(d => d.conductor_id === filters.conductorId);
+    if (filters.vehiculoId) items = items.filter(d => d.vehiculo_id === filters.vehiculoId);
+    if (filters.clienteId) items = items.filter(d => d.cargador_id === filters.clienteId);
+    return items;
+  },
+
+  async ejecutarExport() {
+    const btn = document.getElementById('export-btn');
+    btn.disabled = true;
+    btn.querySelector('.btn-text').textContent = 'Generando...';
+    btn.querySelector('.btn-spinner').hidden = false;
+
+    try {
+      const filters = this._getExportFilters();
+      const items = this._filterDecasForExport(filters);
+
+      if (items.length === 0) {
+        showToast('No hay DeCAs con esos filtros', 'warning');
+        return;
+      }
+
+      // Cargar SheetJS si no está cargado
+      if (typeof XLSX === 'undefined') {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      const estadoMap = { activo: 'Activa', modificado: 'Modificada', finalizado: 'Finalizada', anulado: 'Anulada' };
+
+      const rows = items.map(d => ({
+        'Referencia': d.referencia || '',
+        'Fecha': d.fecha_transporte || '',
+        'Hora carga': d.hora_carga || '',
+        'Estado': estadoMap[d.estado] || d.estado || '',
+        'Origen': d.origen || '',
+        'Destino': d.destino || '',
+        'Mercancía': d.descripcion_mercancia || '',
+        'Cantidad': d.cantidad || '',
+        'Unidad': d.unidad || '',
+        'Cargador': d.nombre_cargador || '',
+        'NIF Cargador': d.nif_cargador || '',
+        'Destinatario': d.nombre_destinatario || '',
+        'NIF Destinatario': d.nif_destinatario || '',
+        'Conductor': d.nombre_conductor || '',
+        'DNI Conductor': d.dni_conductor || '',
+        'Vehículo': d.matricula_vehiculo || '',
+        'Remolque': d.matricula_remolque || '',
+        'N. Autorización': d.num_autorizacion || '',
+        'Versión': d.version || 1,
+        'Creada': d.created_at ? new Date(d.created_at).toLocaleString('es-ES') : '',
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+
+      ws['!cols'] = [
+        { wch: 14 }, { wch: 12 }, { wch: 10 }, { wch: 12 },
+        { wch: 20 }, { wch: 20 }, { wch: 22 }, { wch: 10 },
+        { wch: 8 },  { wch: 22 }, { wch: 12 }, { wch: 22 },
+        { wch: 12 }, { wch: 20 }, { wch: 12 }, { wch: 12 },
+        { wch: 12 }, { wch: 14 }, { wch: 8 },  { wch: 18 },
+      ];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'DeCAs');
+
+      const desde = filters.desde || 'inicio';
+      const hasta = filters.hasta || 'hoy';
+      XLSX.writeFile(wb, `DeCAs_${desde}_${hasta}.xlsx`);
+
+      closeModal();
+      showToast(`${items.length} DeCA${items.length !== 1 ? 's' : ''} exportada${items.length !== 1 ? 's' : ''}`);
+
+    } catch (err) {
+      console.error('Error exportando:', err);
+      showToast('Error generando el Excel', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.querySelector('.btn-text').textContent = 'Exportar';
+      btn.querySelector('.btn-spinner').hidden = true;
     }
   },
 };
