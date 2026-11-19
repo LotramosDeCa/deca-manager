@@ -4,6 +4,8 @@
 
 const App = {
   currentView: 'dashboard',
+  INACTIVITY_TIMEOUT: 30 * 60 * 1000, // 30 minutos en ms
+  _inactivityTimer: null,
 
   // Inicializar app
   async start() {
@@ -20,6 +22,7 @@ const App = {
 
   // ====== PANTALLAS ======
   showLogin() {
+    this.stopInactivityTimer();
     document.getElementById('login-screen').classList.add('active');
     document.getElementById('app-screen').classList.remove('active');
     document.getElementById('login-email').value = '';
@@ -47,6 +50,7 @@ const App = {
     this._alertas = [];
     document.getElementById('bell-btn').addEventListener('click', () => this.showAlertasModal());
     this.loadAlertasBell(); // Cargar alertas en paralelo (no bloquea)
+    this.startInactivityTimer(); // Auto-logout tras 30min sin actividad
     this.navigate('dashboard');
   },
 
@@ -697,6 +701,61 @@ const App = {
         ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
         : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
     });
+  },
+
+  // ====== TEMPORIZADOR DE INACTIVIDAD ======
+  startInactivityTimer() {
+    this.stopInactivityTimer();
+    this._lastActivity = Date.now();
+
+    // Eventos que resetean el temporizador
+    const resetEvents = ['click', 'touchstart', 'keydown', 'scroll'];
+    this._inactivityHandler = () => {
+      this._lastActivity = Date.now();
+      clearTimeout(this._inactivityTimer);
+      this._inactivityTimer = setTimeout(() => this._onInactive(), this.INACTIVITY_TIMEOUT);
+    };
+
+    resetEvents.forEach(evt => document.addEventListener(evt, this._inactivityHandler, { passive: true }));
+
+    // Detectar cuando la app vuelve del segundo plano
+    this._visibilityHandler = () => {
+      if (document.visibilityState === 'visible') {
+        const elapsed = Date.now() - this._lastActivity;
+        if (elapsed >= this.INACTIVITY_TIMEOUT) {
+          this._onInactive();
+        } else {
+          // Reiniciar temporizador con el tiempo restante
+          clearTimeout(this._inactivityTimer);
+          this._inactivityTimer = setTimeout(() => this._onInactive(), this.INACTIVITY_TIMEOUT - elapsed);
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', this._visibilityHandler);
+
+    // Arrancar el temporizador
+    this._inactivityTimer = setTimeout(() => this._onInactive(), this.INACTIVITY_TIMEOUT);
+  },
+
+  stopInactivityTimer() {
+    clearTimeout(this._inactivityTimer);
+    this._inactivityTimer = null;
+    if (this._inactivityHandler) {
+      ['click', 'touchstart', 'keydown', 'scroll'].forEach(evt =>
+        document.removeEventListener(evt, this._inactivityHandler)
+      );
+      this._inactivityHandler = null;
+    }
+    if (this._visibilityHandler) {
+      document.removeEventListener('visibilitychange', this._visibilityHandler);
+      this._visibilityHandler = null;
+    }
+  },
+
+  _onInactive() {
+    this.stopInactivityTimer();
+    Auth.logout();
+    showToast('Sesión cerrada por inactividad', 'info');
   },
 
   // ====== MENÚ ======
