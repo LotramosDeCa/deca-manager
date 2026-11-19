@@ -149,6 +149,10 @@ const Usuarios = {
         Restaurar clave
       </button>` : ''}
       ${!isCurrentUser ? `<button class="btn ${user.activo ? 'btn-danger' : 'btn-success'} btn-sm" onclick="Usuarios.toggleActive('${user.id}', ${!user.activo})">${user.activo ? 'Desactivar' : 'Activar'}</button>` : ''}
+      ${!isCurrentUser ? `<button class="btn btn-sm" style="background:#991b1b; color:#fff; border:none;" onclick="Usuarios.deleteUser('${user.user_id}', '${esc(user.nombre)} ${esc(user.apellidos)}')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        Eliminar
+      </button>` : ''}
     `);
   },
 
@@ -381,6 +385,35 @@ const Usuarios = {
 
           closeModal();
           showToast(`Contraseña de ${nombreCompleto} restaurada a "123456"`);
+        } catch (err) {
+          showToast('Error: ' + err.message, 'error');
+        }
+      }
+    );
+  },
+
+  // Eliminar usuario completamente (auth + profiles)
+  async deleteUser(authUserId, nombreCompleto) {
+    confirmAction(
+      `¿ELIMINAR a ${nombreCompleto} permanentemente?\n\nSe borrará el usuario y todos sus datos de perfil. Las DeCA asignadas se conservarán pero sin conductor asociado.\n\nEsta acción NO se puede deshacer.`,
+      async () => {
+        try {
+          const res = await fetch(SUPABASE_URL + '/functions/v1/delete-user', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + sbToken(),
+              'apikey': SUPABASE_ANON_KEY
+            },
+            body: JSON.stringify({ user_id: authUserId })
+          });
+
+          const result = await res.json();
+          if (!res.ok) throw new Error(result.error || 'Error eliminando usuario');
+
+          closeModal();
+          showToast(`${nombreCompleto} eliminado permanentemente`);
+          await this.loadUsers();
         } catch (err) {
           showToast('Error: ' + err.message, 'error');
         }
